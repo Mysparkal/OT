@@ -1,4 +1,4 @@
-// REPLACE THIS URL WITH YOUR DEPLOYED WEB APP URL
+// REPLACE THIS URL WITH YOUR ACTUAL GOOGLE WEB APP URL
 const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyXbpBf2kV37wPc2gGgupl-E3eA44zrRQuygcQ4CmUjaOa_25ycrEYCr6unC5AO38gm/exec";
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -20,73 +20,58 @@ document.addEventListener('DOMContentLoaded', () => {
         monthFilter.appendChild(opt);
     });
 
-    // --- AUTH LOGIC ---
-    if(localStorage.getItem('user')) showApp(localStorage.getItem('name'));
+    // Check Login Session
+    const savedUser = localStorage.getItem('user');
+    const savedName = localStorage.getItem('name');
+    if(savedUser) showApp(savedName);
 
+    // --- AUTH ACTIONS ---
     document.getElementById('loginBtn').onclick = async () => {
         const u = document.getElementById('username').value;
         const p = document.getElementById('password').value;
-        if(!u || !p) return;
-        loader.style.display = 'flex';
-        const res = await fetch(WEB_APP_URL, {method: 'POST', body: JSON.stringify({action: 'login', username: u, password: p})});
-        const json = await res.json();
-        loader.style.display = 'none';
-        if(json.success) {
-            localStorage.setItem('user', u);
-            localStorage.setItem('name', json.name);
-            showApp(json.name);
-        } else {
-            document.getElementById('errorMsg').innerText = "Invalid Credentials";
-        }
+        if(!u || !p) return alert("Fill all fields");
+        
+        toggleLoader(true);
+        try {
+            const res = await fetch(WEB_APP_URL, {method: 'POST', body: JSON.stringify({action: 'login', username: u, password: p})});
+            const json = await res.json();
+            if(json.success) {
+                localStorage.setItem('user', u);
+                localStorage.setItem('name', json.name);
+                showApp(json.name);
+            } else {
+                document.getElementById('errorMsg').innerText = "Invalid Credentials";
+            }
+        } catch(e) { alert("Network Error"); }
+        toggleLoader(false);
     };
 
-    document.getElementById('gotoReset').onclick = () => {
-        document.getElementById('loginCard').style.display = 'none';
-        document.getElementById('resetCard').style.display = 'block';
-    };
-
-    document.getElementById('backToLogin').onclick = () => {
-        document.getElementById('resetCard').style.display = 'none';
-        document.getElementById('loginCard').style.display = 'block';
-    };
-
-    document.getElementById('submitReset').onclick = async () => {
-        const u = document.getElementById('resetUser').value;
-        const oldP = document.getElementById('oldPassword').value;
-        const newP = document.getElementById('newPassword').value;
-        loader.style.display = 'flex';
-        const res = await fetch(WEB_APP_URL, {method: 'POST', body: JSON.stringify({action: 'changePassword', username: u, oldPassword: oldP, newPassword: newP})});
-        const json = await res.json();
-        loader.style.display = 'none';
-        if(json.success) {
-            alert("Password Updated!");
-            location.reload();
-        } else {
-            document.getElementById('resetMsg').innerText = json.msg;
-        }
-    };
-
-    // --- APP LOGIC ---
     function showApp(name) {
         loginSection.style.display = 'none';
         appSection.style.display = 'block';
-        document.getElementById('welcomeName').innerText = name;
-        document.getElementById('userInitial').innerText = name.charAt(0);
+        document.getElementById('welcomeName').innerText = `Hi ${name}`;
+        document.getElementById('userInitial').innerText = name.charAt(0).toUpperCase();
         document.getElementById('punchDate').valueAsDate = new Date();
         loadData();
     }
 
+    // --- DATA ACTIONS ---
     async function loadData() {
-        loader.style.display = 'flex';
-        const res = await fetch(WEB_APP_URL, {method: 'POST', body: JSON.stringify({action: 'getEntries', username: localStorage.getItem('user'), month: monthFilter.value})});
-        renderTable(await res.json());
-        loader.style.display = 'none';
+        toggleLoader(true);
+        try {
+            const res = await fetch(WEB_APP_URL, {
+                method: 'POST', 
+                body: JSON.stringify({
+                    action: 'getEntries', 
+                    username: localStorage.getItem('user'), 
+                    month: monthFilter.value
+                })
+            });
+            const entries = await res.json();
+            renderTable(entries);
+        } catch(e) { console.error("Load failed", e); }
+        toggleLoader(false);
     }
-
-    isLeave.onchange = () => {
-        timeGroup.style.opacity = isLeave.checked ? "0.2" : "1";
-        timeGroup.style.pointerEvents = isLeave.checked ? "none" : "auto";
-    };
 
     document.getElementById('saveBtn').onclick = async () => {
         const date = document.getElementById('punchDate').value;
@@ -95,13 +80,31 @@ document.addEventListener('DOMContentLoaded', () => {
         if(!date) return alert("Select Date");
 
         const stats = calculateShift(m, e, isLeave.checked);
-        loader.style.display = 'flex';
-        await fetch(WEB_APP_URL, {method: 'POST', body: JSON.stringify({
-            action: 'saveEntry', username: localStorage.getItem('user'),
-            date, month: monthFilter.value, morning: m, evening: e, isLeave: isLeave.checked,
-            diff: stats.diff, status: stats.status
-        })});
-        loadData();
+        
+        toggleLoader(true);
+        try {
+            // Wait for server to confirm save
+            await fetch(WEB_APP_URL, {
+                method: 'POST', 
+                body: JSON.stringify({
+                    action: 'saveEntry', 
+                    username: localStorage.getItem('user'),
+                    date, 
+                    month: monthFilter.value, 
+                    morning: m, 
+                    evening: e, 
+                    isLeave: isLeave.checked,
+                    diff: stats.diff, 
+                    status: stats.status
+                })
+            });
+            // Immediately reload data after save
+            await loadData();
+            alert("Record Updated Successfully!");
+        } catch(err) {
+            alert("Failed to sync. Check internet.");
+            toggleLoader(false);
+        }
     };
 
     function calculateShift(m, e, leave) {
@@ -121,23 +124,40 @@ document.addEventListener('DOMContentLoaded', () => {
         const tbody = document.querySelector('#timeTable tbody');
         tbody.innerHTML = '';
         let total = 0;
+        
+        // Sorting by date
         data.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(row => {
             total += parseInt(row.diff);
             const r = tbody.insertRow();
-            r.innerHTML = `<td>${row.date.split('-').reverse().join('/')}</td>
-                           <td>${row.isLeave ? '-' : row.morning}</td>
-                           <td>${row.isLeave ? '-' : row.evening}</td>
-                           <td><span class="badge ${row.status.toLowerCase()}">${row.status}</span></td>
-                           <td class="${row.diff < 0 ? 'neg' : 'pos'}">${formatMins(row.diff)}</td>`;
+            r.innerHTML = `
+                <td>${row.date.split('-').reverse().join('/')}</td>
+                <td>${row.isLeave ? '-' : row.morning}</td>
+                <td>${row.isLeave ? '-' : row.evening}</td>
+                <td><span class="badge ${row.status.toLowerCase()}">${row.status}</span></td>
+                <td class="${row.diff < 0 ? 'neg' : 'pos'}">${formatMins(row.diff)}</td>
+            `;
         });
         document.getElementById('totalTime').innerText = formatMins(total);
-        document.getElementById('totalTime').className = total < 0 ? 'neg' : 'pos';
+        document.getElementById('totalTime').className = total < 0 ? 'value neg' : 'value pos';
     }
 
+    // UI Helpers
     function formatMins(m) {
         const h = Math.floor(Math.abs(m)/60), mi = Math.abs(m)%60;
-        return `${m < 0 ? '-' : ''}${h}h ${mi}m`;
+        return `${m < 0 ? '-' : ''}${h}h ${String(mi).padStart(2, '0')}m`;
     }
+
+    function toggleLoader(show) { loader.style.display = show ? 'flex' : 'none'; }
+
+    isLeave.onchange = () => {
+        timeGroup.classList.toggle('disabled', isLeave.checked);
+        timeGroup.style.opacity = isLeave.checked ? "0.3" : "1";
+        timeGroup.style.pointerEvents = isLeave.checked ? "none" : "auto";
+    };
+
+    // Card Switches
+    document.getElementById('gotoReset').onclick = () => { document.getElementById('loginCard').style.display='none'; document.getElementById('resetCard').style.display='block'; };
+    document.getElementById('backToLogin').onclick = () => { document.getElementById('resetCard').style.display='none'; document.getElementById('loginCard').style.display='block'; };
 
     monthFilter.onchange = loadData;
     document.getElementById('logoutBtn').onclick = () => { localStorage.clear(); location.reload(); };
