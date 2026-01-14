@@ -10,8 +10,9 @@
 <body>
     <div id="loader" class="loader-wrapper" style="display:none;"><div class="loader"></div></div>
 
-    <!-- AUTHENTICATION -->
+    <!-- AUTHENTICATION SECTION -->
     <div id="loginSection" class="auth-container">
+        <!-- Login Card -->
         <div class="glass-card auth-card" id="loginCard">
             <div class="logo"><i class="fas fa-user-clock"></i></div>
             <h2>Employee Login</h2>
@@ -22,6 +23,7 @@
             <p id="errorMsg" class="error"></p>
         </div>
 
+        <!-- Reset Card -->
         <div class="glass-card auth-card" id="resetCard" style="display:none;">
             <div class="logo"><i class="fas fa-key"></i></div>
             <h2>Change Password</h2>
@@ -34,7 +36,7 @@
         </div>
     </div>
 
-    <!-- MAIN APP -->
+    <!-- MAIN DASHBOARD -->
     <div id="appSection" class="app-container" style="display:none;">
         <header class="navbar">
             <div class="user-profile">
@@ -45,33 +47,35 @@
         </header>
 
         <div class="dashboard-grid">
-            <aside class="glass-card form-section">
+            <aside class="glass-card side-panel">
                 <h3><i class="fas fa-edit"></i> Daily Log</h3>
-                <div class="form-control"><label>Date</label><input type="date" id="punchDate"></div>
-                <div class="checkbox-container"><input type="checkbox" id="isLeave"><label for="isLeave">Mark as Leave</label></div>
-                <div id="timeInputGroup">
-                    <div class="form-control"><label>Morning (In)</label><input type="time" id="morningPunch" value="09:15"></div>
-                    <div class="form-control"><label>Evening (Out)</label><input type="time" id="eveningPunch" value="19:00"></div>
+                <div class="form-group"><label>Date</label><input type="date" id="punchDate"></div>
+                <div class="checkbox-box">
+                    <input type="checkbox" id="isLeave">
+                    <label for="isLeave">Mark as Leave</label>
+                </div>
+                <div id="timeInputs">
+                    <div class="form-group"><label>Morning In</label><input type="time" id="morningPunch" value="09:15"></div>
+                    <div class="form-group"><label>Evening Out</label><input type="time" id="eveningPunch" value="19:00"></div>
                 </div>
                 <button id="saveBtn" class="btn-primary">Sync to Sheet</button>
             </aside>
 
-            <section class="glass-card history-section">
-                <div class="section-header">
-                    <h3><i class="fas fa-history"></i> Logs</h3>
-                    <select id="monthFilter" class="month-select"></select>
+            <section class="glass-card main-panel">
+                <div class="table-header">
+                    <h3><i class="fas fa-list"></i> History</h3>
+                    <select id="monthFilter"></select>
                 </div>
-                <div class="table-responsive">
+                <div class="table-container">
                     <table id="timeTable">
                         <thead><tr><th>Date</th><th>In</th><th>Out</th><th>Status</th><th>Diff</th><th>Action</th></tr></thead>
                         <tbody></tbody>
                     </table>
                 </div>
-                <div class="summary-footer">Total: <span id="totalTime">0h 00m</span></div>
+                <div class="total-box">Total Balance: <span id="totalTime">0h 00m</span></div>
             </section>
         </div>
     </div>
     <script src="Script.js"></script>
 </body>
 </html>
-
