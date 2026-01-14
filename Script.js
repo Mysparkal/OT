@@ -1,17 +1,10 @@
-// REPLACE THIS URL WITH YOUR ACTUAL GOOGLE WEB APP URL
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyXbpBf2kV37wPc2gGgupl-E3eA44zrRQuygcQ4CmUjaOa_25ycrEYCr6unC5AO38gm/exec";
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxREId4_macnQe4KOCi5i_zD9L5cmzu2EjwdXRilBZri26_Y3H59S00_a_Pm80NS6QhOA/exec";
 
 document.addEventListener('DOMContentLoaded', () => {
-    const loginSection = document.getElementById('loginSection');
-    const appSection = document.getElementById('appSection');
-    const monthFilter = document.getElementById('monthFilter');
-    const loader = document.getElementById('loader');
-    const isLeave = document.getElementById('isLeave');
-    const timeGroup = document.getElementById('timeInputGroup');
-
-    // Init Month Filter
     const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
     const now = new Date();
+    const monthFilter = document.getElementById('monthFilter');
+    
     months.forEach((m, i) => {
         let opt = document.createElement('option');
         opt.value = `${m}-${now.getFullYear()}`;
@@ -20,91 +13,49 @@ document.addEventListener('DOMContentLoaded', () => {
         monthFilter.appendChild(opt);
     });
 
-    // Check Login Session
-    const savedUser = localStorage.getItem('user');
-    const savedName = localStorage.getItem('name');
-    if(savedUser) showApp(savedName);
+    if(localStorage.getItem('user')) showApp(localStorage.getItem('name'));
 
-    // --- AUTH ACTIONS ---
     document.getElementById('loginBtn').onclick = async () => {
-        const u = document.getElementById('username').value;
-        const p = document.getElementById('password').value;
-        if(!u || !p) return alert("Fill all fields");
-        
+        const u = document.getElementById('username').value, p = document.getElementById('password').value;
         toggleLoader(true);
-        try {
-            const res = await fetch(WEB_APP_URL, {method: 'POST', body: JSON.stringify({action: 'login', username: u, password: p})});
-            const json = await res.json();
-            if(json.success) {
-                localStorage.setItem('user', u);
-                localStorage.setItem('name', json.name);
-                showApp(json.name);
-            } else {
-                document.getElementById('errorMsg').innerText = "Invalid Credentials";
-            }
-        } catch(e) { alert("Network Error"); }
+        const res = await fetch(WEB_APP_URL, {method: 'POST', body: JSON.stringify({action: 'login', username: u, password: p})});
+        const json = await res.json();
         toggleLoader(false);
+        if(json.success) { localStorage.setItem('user', u); localStorage.setItem('name', json.name); showApp(json.name); }
+        else { document.getElementById('errorMsg').innerText = "Invalid Login"; }
     };
 
     function showApp(name) {
-        loginSection.style.display = 'none';
-        appSection.style.display = 'block';
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('appSection').style.display = 'block';
         document.getElementById('welcomeName').innerText = `Hi ${name}`;
         document.getElementById('userInitial').innerText = name.charAt(0).toUpperCase();
         document.getElementById('punchDate').valueAsDate = new Date();
         loadData();
     }
 
-    // --- DATA ACTIONS ---
     async function loadData() {
         toggleLoader(true);
-        try {
-            const res = await fetch(WEB_APP_URL, {
-                method: 'POST', 
-                body: JSON.stringify({
-                    action: 'getEntries', 
-                    username: localStorage.getItem('user'), 
-                    month: monthFilter.value
-                })
-            });
-            const entries = await res.json();
-            renderTable(entries);
-        } catch(e) { console.error("Load failed", e); }
+        const res = await fetch(WEB_APP_URL, {method: 'POST', body: JSON.stringify({action: 'getEntries', username: localStorage.getItem('user'), month: monthFilter.value})});
+        const data = await res.json();
+        renderTable(data);
         toggleLoader(false);
     }
 
     document.getElementById('saveBtn').onclick = async () => {
         const date = document.getElementById('punchDate').value;
-        const m = document.getElementById('morningPunch').value;
-        const e = document.getElementById('eveningPunch').value;
         if(!date) return alert("Select Date");
-
-        const stats = calculateShift(m, e, isLeave.checked);
+        const leave = document.getElementById('isLeave').checked;
+        const m = document.getElementById('morningPunch').value, e = document.getElementById('eveningPunch').value;
+        const stats = calculateShift(m, e, leave);
         
         toggleLoader(true);
-        try {
-            // Wait for server to confirm save
-            await fetch(WEB_APP_URL, {
-                method: 'POST', 
-                body: JSON.stringify({
-                    action: 'saveEntry', 
-                    username: localStorage.getItem('user'),
-                    date, 
-                    month: monthFilter.value, 
-                    morning: m, 
-                    evening: e, 
-                    isLeave: isLeave.checked,
-                    diff: stats.diff, 
-                    status: stats.status
-                })
-            });
-            // Immediately reload data after save
-            await loadData();
-            alert("Record Updated Successfully!");
-        } catch(err) {
-            alert("Failed to sync. Check internet.");
-            toggleLoader(false);
-        }
+        await fetch(WEB_APP_URL, {method: 'POST', body: JSON.stringify({
+            action: 'saveEntry', username: localStorage.getItem('user'), date, month: monthFilter.value,
+            morning: m, evening: e, isLeave: leave, diff: stats.diff, status: stats.status
+        })});
+        await loadData();
+        alert("Synced Successfully!");
     };
 
     function calculateShift(m, e, leave) {
@@ -124,41 +75,41 @@ document.addEventListener('DOMContentLoaded', () => {
         const tbody = document.querySelector('#timeTable tbody');
         tbody.innerHTML = '';
         let total = 0;
-        
-        // Sorting by date
         data.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(row => {
-            total += parseInt(row.diff);
+            total += parseInt(row.diff || 0);
             const r = tbody.insertRow();
             r.innerHTML = `
                 <td>${row.date.split('-').reverse().join('/')}</td>
                 <td>${row.isLeave ? '-' : row.morning}</td>
                 <td>${row.isLeave ? '-' : row.evening}</td>
-                <td><span class="badge ${row.status.toLowerCase()}">${row.status}</span></td>
+                <td><span class="badge ${row.status.toLowerCase().replace(' ', '-')}">${row.status}</span></td>
                 <td class="${row.diff < 0 ? 'neg' : 'pos'}">${formatMins(row.diff)}</td>
+                <td><button class="edit-btn" onclick="editRow('${row.date}','${row.morning}','${row.evening}',${row.isLeave})"><i class="fas fa-edit"></i></button></td>
             `;
         });
         document.getElementById('totalTime').innerText = formatMins(total);
-        document.getElementById('totalTime').className = total < 0 ? 'value neg' : 'value pos';
+        document.getElementById('totalTime').className = total < 0 ? 'neg' : 'pos';
     }
 
-    // UI Helpers
+    window.editRow = (date, m, e, leave) => {
+        document.getElementById('punchDate').value = date;
+        document.getElementById('morningPunch').value = m;
+        document.getElementById('eveningPunch').value = e;
+        document.getElementById('isLeave').checked = leave;
+        document.getElementById('isLeave').dispatchEvent(new Event('change'));
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    };
+
     function formatMins(m) {
         const h = Math.floor(Math.abs(m)/60), mi = Math.abs(m)%60;
         return `${m < 0 ? '-' : ''}${h}h ${String(mi).padStart(2, '0')}m`;
     }
 
-    function toggleLoader(show) { loader.style.display = show ? 'flex' : 'none'; }
-
-    isLeave.onchange = () => {
-        timeGroup.classList.toggle('disabled', isLeave.checked);
-        timeGroup.style.opacity = isLeave.checked ? "0.3" : "1";
-        timeGroup.style.pointerEvents = isLeave.checked ? "none" : "auto";
+    function toggleLoader(s) { document.getElementById('loader').style.display = s ? 'flex' : 'none'; }
+    document.getElementById('isLeave').onchange = (e) => {
+        document.getElementById('timeInputGroup').style.opacity = e.target.checked ? "0.3" : "1";
+        document.getElementById('timeInputGroup').style.pointerEvents = e.target.checked ? "none" : "auto";
     };
-
-    // Card Switches
-    document.getElementById('gotoReset').onclick = () => { document.getElementById('loginCard').style.display='none'; document.getElementById('resetCard').style.display='block'; };
-    document.getElementById('backToLogin').onclick = () => { document.getElementById('resetCard').style.display='none'; document.getElementById('loginCard').style.display='block'; };
-
     monthFilter.onchange = loadData;
     document.getElementById('logoutBtn').onclick = () => { localStorage.clear(); location.reload(); };
 });
