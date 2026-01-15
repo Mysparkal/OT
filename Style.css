@@ -266,6 +266,9 @@ td {
     border-radius: 8px;
     cursor: pointer;
 }
+h2{
+   margin-bottom: 10%;
+}
 
 /* =========================================
    8. UTILITIES & RESPONSIVE
@@ -286,3 +289,4 @@ td {
     .total-content { flex-direction: column; align-items: flex-start; gap: 5px; }
     .total-value { font-size: 1.3rem; }
 }
+
