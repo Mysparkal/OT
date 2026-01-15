@@ -99,36 +99,46 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function renderTable(data) {
-        const tbody = document.querySelector('#timeTable tbody');
-        const totalEl = document.getElementById('totalTime');
-        tbody.innerHTML = '';
-        let total = 0;
+    const tbody = document.querySelector('#timeTable tbody');
+    const totalEl = document.getElementById('totalTime');
+    tbody.innerHTML = '';
+    let total = 0;
 
-        if (!data || data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px;">No records found.</td></tr>';
-            totalEl.innerText = "0h 00m";
-            totalEl.className = "total-value";
-            return;
-        }
-
-        data.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(row => {
-            total += parseInt(row.diff || 0);
-            const r = tbody.insertRow();
-            r.innerHTML = `
-                <td>${row.date.split('-').reverse().join('/')}</td>
-                <td>${row.isLeave ? '-' : row.morning}</td>
-                <td>${row.isLeave ? '-' : row.evening}</td>
-                <td><span class="badge ${row.status.toLowerCase().replace(' ', '-')}">${row.status}</span></td>
-                <td class="${row.diff < 0 ? 'neg' : 'pos'}">${formatMins(row.diff)}</td>
-                <td><button class="edit-btn" onclick="editRow('${row.date}','${row.morning}','${row.evening}',${row.isLeave})"><i class="fas fa-edit"></i></button></td>
-            `;
-        });
-
-        totalEl.innerText = formatMins(total);
-        if (total < 0) { totalEl.className = "total-value neg"; }
-        else if (total > 0) { totalEl.className = "total-value pos"; }
-        else { totalEl.className = "total-value"; }
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 30px;">No entries found in sheet.</td></tr>';
+        totalEl.innerText = "0h 00m";
+        totalEl.className = "total-amount";
+        return;
     }
+
+    // Sort entries by date
+    data.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(row => {
+        total += parseInt(row.diff || 0);
+        const r = tbody.insertRow();
+        
+        // Format date to DD/MM/YYYY
+        const d = row.date.split('-').reverse().join('/');
+
+        r.innerHTML = `
+            <td>${d}</td>
+            <td>${row.isLeave ? '-' : row.morning}</td>
+            <td>${row.isLeave ? '-' : row.evening}</td>
+            <td><span class="badge ${row.status.toLowerCase().replace(' ', '-')}">${row.status}</span></td>
+            <td class="${row.diff < 0 ? 'neg' : 'pos'}">${formatMins(row.diff)}</td>
+            <td><button class="edit-btn" onclick="editRow('${row.date}','${row.morning}','${row.evening}',${row.isLeave})"><i class="fas fa-edit"></i></button></td>
+        `;
+    });
+
+    totalEl.innerText = formatMins(total);
+    // Apply positive/negative colors to Monthly Balance
+    if (total < 0) { 
+        totalEl.className = "total-amount neg"; 
+    } else if (total > 0) { 
+        totalEl.className = "total-amount pos"; 
+    } else { 
+        totalEl.className = "total-amount"; 
+    }
+}
 
     function calculateShift(m, e, leave) {
         if(leave) return { diff: 0, status: 'Leave' };
@@ -183,3 +193,4 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch(e) { toggleLoader(false); }
     };
 });
+
