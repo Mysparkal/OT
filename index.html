@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TimeFlow</title>
     <link rel="icon" type="image/x-icon" href="https://media.lordicon.com/icons/wired/flat/45-clock-time.svg">
-    <!-- Font Awesome for Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link rel="stylesheet" href="Style.css">
 </head>
@@ -13,11 +13,13 @@
     <div id="loader" class="loader-wrapper" style="display:none;"><div class="loader"></div></div>
 
     <!-- AUTHENTICATION SECTION -->
-    <div id="loginSection" class="auth-wrapper">
-        <!-- Login Card -->
+    <section id="loginSection" class="auth-wrapper">
         <div class="auth-card" id="loginCard">
-            <div class="auth-icon"><i class="fas fa-user-circle"></i></div>
-            <h2>Login</h2>
+            <div class="auth-header">
+                <div class="auth-logo"><i class="fas fa-bolt"></i></div>
+                <h2>Welcome Back</h2>
+                <p>Please enter your details to sign in.</p>
+            </div>
             <div class="form-group">
                 <input type="text" id="username" placeholder="Username" autocomplete="off">
             </div>
@@ -26,115 +28,119 @@
             </div>
             <button id="loginBtn" class="btn-primary">Sign In</button>
             <div class="auth-footer">
-                <a href="#" id="gotoReset" class="auth-link">Change Password?</a>
+                <a href="#" id="gotoReset" class="auth-link">Forgot Password?</a>
             </div>
             <p id="errorMsg" class="error-text"></p>
         </div>
 
-        <!-- Change Password Card -->
         <div class="auth-card" id="resetCard" style="display:none;">
-            <div class="auth-icon"><i class="fas fa-key"></i></div>
-            <h2>New Password</h2>
-            <div class="form-group">
-                <input type="text" id="resetUser" placeholder="Username">
+            <div class="auth-header">
+                <div class="auth-logo"><i class="fas fa-key"></i></div>
+                <h2>Security</h2>
+                <p>Update your authentication credentials.</p>
             </div>
-            <div class="form-group">
-                <input type="password" id="oldPassword" placeholder="Old Password">
-            </div>
-            <div class="form-group">
-                <input type="password" id="newPassword" placeholder="New Password">
-            </div>
-            <button id="submitReset" class="btn-primary">Update Password</button>
+            <div class="form-group"><input type="text" id="resetUser" placeholder="Username"></div>
+            <div class="form-group"><input type="password" id="oldPassword" placeholder="Old Password"></div>
+            <div class="form-group"><input type="password" id="newPassword" placeholder="New Password"></div>
+            <button id="submitReset" class="btn-primary">Reset Password</button>
             <div class="auth-footer">
-                <a href="#" id="backToLogin" class="auth-link">Back to Login</a>
+                <a href="#" id="backToLogin" class="auth-link">Back to login</a>
             </div>
             <p id="resetMsg" class="error-text"></p>
         </div>
-    </div>
+    </section>
 
     <!-- DASHBOARD SECTION -->
     <div id="appSection" class="app-wrapper" style="display:none;">
-        <nav class="main-nav">
-            <div class="nav-user">
+        <nav class="glass-nav">
+            <div class="nav-left">
                 <div class="nav-avatar" id="userInitial">?</div>
-                <span id="welcomeName">Hi User</span>
+                <div class="nav-text">
+                    <span id="welcomeName">Hi User</span>
+                    <small>Employee Dashboard</small>
+                </div>
             </div>
             <button id="logoutBtn" class="btn-logout">
-                <i class="fas fa-power-off"></i> <span>Logout</span>
+                <i class="fas fa-sign-out-alt"></i> <span>Sign Out</span>
             </button>
         </nav>
 
-        <div class="dashboard-layout">
+        <div class="dashboard-grid">
             <!-- Sidebar: Input Form -->
-            <aside class="card side-card">
-                <h3><i class="fas fa-calendar-check"></i> Daily Punch</h3>
-                <div class="form-group">
-                    <label>Select Date</label>
-                    <input type="date" id="punchDate">
-                </div>
-                
-                <div class="leave-container">
-                    <label class="custom-checkbox">
-                        <input type="checkbox" id="isLeave">
-                        <span class="checkmark"></span>
-                        Mark as Leave
-                    </label>
+            <aside class="side-panel">
+                <div class="glass-card">
+                    <h3><i class="fas fa-plus-circle"></i> Daily Log</h3>
+                    <div class="form-group">
+                        <label>Entry Date</label>
+                        <input type="date" id="punchDate">
+                    </div>
+                    
+                    <div class="leave-toggle">
+                        <label class="switch">
+                            <input type="checkbox" id="isLeave">
+                            <span class="slider round"></span>
+                        </label>
+                        <span>Mark as Leave</span>
+                    </div>
+
+                    <div id="timeInputGroup" class="time-group">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Morning In</label>
+                                <input type="time" id="morningPunch" value="09:15">
+                            </div>
+                            <div class="form-group">
+                                <label>Evening Out</label>
+                                <input type="time" id="eveningPunch" value="19:00">
+                            </div>
+                        </div>
+                    </div>
+                    <button id="saveBtn" class="btn-primary btn-glow">Sync to Cloud</button>
                 </div>
 
-                <div id="timeInputGroup">
-                    <div class="form-group">
-                        <label>Morning In</label>
-                        <input type="time" id="morningPunch" value="09:15">
-                    </div>
-                    <div class="form-group">
-                        <label>Evening Out</label>
-                        <input type="time" id="eveningPunch" value="19:00">
+                <div class="glass-card total-card">
+                    <span class="total-label">Monthly Accumulation</span>
+                    <h2 id="totalTime" class="total-amount">0h 00m</h2>
+                    <div class="progress-container">
+                        <div class="progress-bar" id="progressBar"></div>
                     </div>
                 </div>
-                <button id="saveBtn" class="btn-primary">Sync to Sheet</button>
             </aside>
 
             <!-- Main: Table -->
-            <main class="card main-card">
-                <div class="table-controls">
-                    <h3><i class="fas fa-history"></i> Attendance Log</h3>
-                    <select id="monthFilter" class="month-dropdown"></select>
-                </div>
-                
-                <div class="table-overflow">
-                    <table id="timeTable">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>In</th>
-                                <th>Out</th>
-                                <th>Status</th>
-                                <th>Diff</th>
-                                <th>Edit</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-
-                <div class="total-bar-card">
-                    <div class="total-info">
-                        <span class="total-title">Monthly Accumulated Balance</span>
-                        <span id="totalTime" class="total-amount">0h 00m</span>
+            <main class="main-content">
+                <div class="glass-card table-card">
+                    <div class="table-header-row">
+                        <h3><i class="fas fa-list-ul"></i> Attendance Logs</h3>
+                        <div class="filter-group">
+                            <select id="monthFilter" class="custom-select"></select>
+                        </div>
+                    </div>
+                    
+                    <div class="table-wrapper">
+                        <table id="timeTable">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>In</th>
+                                    <th>Out</th>
+                                    <th>Status</th>
+                                    <th>Diff</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
                     </div>
                 </div>
             </main>
         </div>
     </div>
 
-    <footer class="app-footer">
-        <p>&copy; 2026 | Designed and Developed by Raj Saxena</p>
+    <footer class="modern-footer">
+        <p>Built with <i class="fas fa-heart"></i> by <span>Raj Saxena</span> &copy; 2026</p>
     </footer>
 
     <script src="Script.js"></script>
 </body>
 </html>
-
-
-
-
