@@ -113,6 +113,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderTable(data) {
+        const totalEl = document.getElementById('totalTime');
+            totalEl.innerText = formatMins(total);
+
+        // Dynamic styling for Monthly Balance
+            if (total < 0) {
+                totalEl.classList.add('neg');
+                totalEl.classList.remove('pos');
+            } else if (total > 0) {
+                totalEl.classList.add('pos');
+                totalEl.classList.remove('neg');
+            } else {
+                totalEl.classList.remove('pos', 'neg');
+            }
         const tbody = document.querySelector('#timeTable tbody');
         tbody.innerHTML = '';
         let total = 0;
@@ -163,3 +176,4 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('logoutBtn').onclick = () => { localStorage.clear(); location.reload(); };
     monthFilter.onchange = loadData;
 });
+
