@@ -1,17 +1,13 @@
 const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxREId4_macnQe4KOCi5i_zD9L5cmzu2EjwdXRilBZri26_Y3H59S00_a_Pm80NS6QhOA/exec";
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Select Elements
-    const loginSection = document.getElementById('loginSection');
-    const appSection = document.getElementById('appSection');
-    const welcomeName = document.getElementById('welcomeName');
-    const userInitial = document.getElementById('userInitial');
-    const monthFilter = document.getElementById('monthFilter');
     const loader = document.getElementById('loader');
-
-    // Init Month Dropdown
+    const monthFilter = document.getElementById('monthFilter');
     const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
     const now = new Date();
+
+    // Init Month Filter
+    monthFilter.innerHTML = '';
     months.forEach((m, i) => {
         let opt = document.createElement('option');
         opt.value = `${m}-${now.getFullYear()}`;
@@ -20,84 +16,119 @@ document.addEventListener('DOMContentLoaded', () => {
         monthFilter.appendChild(opt);
     });
 
-    // --- CHECK SESSION ---
-    const savedName = localStorage.getItem('name');
-    const savedUser = localStorage.getItem('user');
-    if(savedUser) showApp(savedName);
+    if(localStorage.getItem('user')) showApp(localStorage.getItem('name'));
 
-    // --- LOGIN ---
+    // Authentication
     document.getElementById('loginBtn').onclick = async () => {
         const u = document.getElementById('username').value.trim();
         const p = document.getElementById('password').value;
-        if(!u || !p) return alert("Enter credentials");
+        if(!u || !p) return alert("Please enter Username and Password");
         
         toggleLoader(true);
-        const res = await fetch(WEB_APP_URL, {method: 'POST', body: JSON.stringify({action: 'login', username: u, password: p})});
-        const json = await res.json();
-        toggleLoader(false);
-
-        if(json.success) {
-            localStorage.setItem('user', u);
-            localStorage.setItem('name', json.name);
-            showApp(json.name);
-        } else {
-            document.getElementById('errorMsg').innerText = "Invalid Login";
+        try {
+            const res = await fetch(WEB_APP_URL, {method: 'POST', body: JSON.stringify({action: 'login', username: u, password: p})});
+            const json = await res.json();
+            if(json.success) {
+                localStorage.setItem('user', u);
+                localStorage.setItem('name', json.name);
+                showApp(json.name);
+            } else {
+                alert("Incorrect Login Details");
+                toggleLoader(false);
+            }
+        } catch (e) { 
+            alert("Network Error: Could not connect to Google Script.");
+            toggleLoader(false); 
         }
     };
 
     function showApp(name) {
-        loginSection.style.display = 'none';
-        appSection.style.display = 'block';
-        welcomeName.innerText = `Hi ${name}`;
-        userInitial.innerText = name.charAt(0).toUpperCase();
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('appSection').style.display = 'block';
+        document.getElementById('welcomeName').innerText = `Hi ${name}`;
+        document.getElementById('userInitial').innerText = name.charAt(0).toUpperCase();
         document.getElementById('punchDate').valueAsDate = new Date();
         loadData();
     }
 
-    // --- DATA HANDLING ---
     async function loadData() {
         toggleLoader(true);
-        const res = await fetch(WEB_APP_URL, {
-            method: 'POST', 
-            body: JSON.stringify({
-                action: 'getEntries', 
-                username: localStorage.getItem('user'), 
-                month: monthFilter.value
-            })
-        });
-        const data = await res.json();
-        renderTable(data);
-        toggleLoader(false);
+        const user = localStorage.getItem('user');
+        const month = monthFilter.value;
+        try {
+            const res = await fetch(WEB_APP_URL, {
+                method: 'POST', 
+                body: JSON.stringify({ action: 'getEntries', username: user, month: month })
+            });
+            const data = await res.json();
+            renderTable(data);
+        } catch (e) { 
+            console.error("Error loading data:", e); 
+        } finally {
+            toggleLoader(false); // This STOPS the loader no matter what happens
+        }
     }
 
     document.getElementById('saveBtn').onclick = async () => {
         const date = document.getElementById('punchDate').value;
         if(!date) return alert("Select Date");
-        
-        const isLeave = document.getElementById('isLeave').checked;
-        const morning = document.getElementById('morningPunch').value;
-        const evening = document.getElementById('eveningPunch').value;
-        
-        const stats = calculateShift(morning, evening, isLeave);
-        
+        const leave = document.getElementById('isLeave').checked;
+        const mInput = document.getElementById('morningPunch').value;
+        const eInput = document.getElementById('eveningPunch').value;
+        const stats = calculateShift(mInput, eInput, leave);
+
         toggleLoader(true);
-        await fetch(WEB_APP_URL, {
-            method: 'POST', 
-            body: JSON.stringify({
-                action: 'saveEntry', 
-                username: localStorage.getItem('user'),
-                date: date, 
-                month: monthFilter.value,
-                morning: morning, 
-                evening: evening, 
-                isLeave: isLeave,
-                diff: stats.diff, 
-                status: stats.status
-            })
-        });
-        await loadData();
-        alert("Synced successfully!");
+        try {
+            await fetch(WEB_APP_URL, {
+                method: 'POST', 
+                body: JSON.stringify({
+                    action: 'saveEntry', 
+                    username: localStorage.getItem('user'), 
+                    date: date, 
+                    month: monthFilter.value,
+                    morning: mInput, evening: eInput, isLeave: leave, 
+                    diff: stats.diff, status: stats.status
+                })
+            });
+            await loadData();
+            alert("Attendance Synced!");
+        } catch (err) { 
+            alert("Save Failed"); 
+            toggleLoader(false);
+        }
     };
+
+    function renderTable(data) {
+        const tbody = document.querySelector('#timeTable tbody');
+        const totalEl = document.getElementById('totalTime');
+        tbody.innerHTML = '';
+        let total = 0;
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px;">No records found.</td></tr>';
+            totalEl.innerText = "0h 00m";
+            totalEl.className = "total-value";
+            return;
+        }
+
+        data.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(row => {
+            total += parseInt(row.diff || 0);
+            const r = tbody.insertRow();
+            r.innerHTML = `
+                <td>${row.date.split('-').reverse().join('/')}</td>
+                <td>${row.isLeave ? '-' : row.morning}</td>
+                <td>${row.isLeave ? '-' : row.evening}</td>
+                <td><span class="badge ${row.status.toLowerCase().replace(' ', '-')}">${row.status}</span></td>
+                <td class="${row.diff < 0 ? 'neg' : 'pos'}">${formatMins(row.diff)}</td>
+                <td><button class="edit-btn" onclick="editRow('${row.date}','${row.morning}','${row.evening}',${row.isLeave})"><i class="fas fa-edit"></i></button></td>
+            `;
+        });
+
+        totalEl.innerText = formatMins(total);
+        if (total < 0) { totalEl.className = "total-value neg"; }
+        else if (total > 0) { totalEl.className = "total-value pos"; }
+        else { totalEl.className = "total-value"; }
+    }
 
     function calculateShift(m, e, leave) {
         if(leave) return { diff: 0, status: 'Leave' };
@@ -112,53 +143,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return { diff, status };
     }
 
-    function renderTable(data) {
-        const totalEl = document.getElementById('totalTime');
-            totalEl.innerText = formatMins(total);
-
-        // Dynamic styling for Monthly Balance
-            if (total < 0) {
-                totalEl.classList.add('neg');
-                totalEl.classList.remove('pos');
-            } else if (total > 0) {
-                totalEl.classList.add('pos');
-                totalEl.classList.remove('neg');
-            } else {
-                totalEl.classList.remove('pos', 'neg');
-            }
-        const tbody = document.querySelector('#timeTable tbody');
-        tbody.innerHTML = '';
-        let total = 0;
-        data.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(row => {
-            total += parseInt(row.diff || 0);
-            const r = tbody.insertRow();
-            r.innerHTML = `
-                <td>${row.date.split('-').reverse().join('/')}</td>
-                <td>${row.isLeave ? '-' : row.morning}</td>
-                <td>${row.isLeave ? '-' : row.evening}</td>
-                <td><span class="badge ${row.status.toLowerCase().replace(' ', '-')}">${row.status}</span></td>
-                <td class="${row.diff < 0 ? 'neg' : 'pos'}">${formatMins(row.diff)}</td>
-                <td><button class="edit-btn" onclick="editRow('${row.date}','${row.morning}','${row.evening}',${row.isLeave})"><i class="fas fa-edit"></i></button></td>
-            `;
-        });
-        document.getElementById('totalTime').innerText = formatMins(total);
-        document.getElementById('totalTime').className = total < 0 ? 'total-value neg' : 'total-value pos';
-    }
-
-    // Helpers
     function formatMins(m) {
         const h = Math.floor(Math.abs(m)/60), mi = Math.abs(m)%60;
         return `${m < 0 ? '-' : ''}${h}h ${String(mi).padStart(2, '0')}m`;
     }
-
-    function toggleLoader(s) { loader.style.display = s ? 'flex' : 'none'; }
-    
-    // UI Effects
-    document.getElementById('isLeave').onchange = (e) => {
-        const inputs = document.getElementById('timeInputGroup');
-        inputs.style.opacity = e.target.checked ? "0.3" : "1";
-        inputs.style.pointerEvents = e.target.checked ? "none" : "auto";
-    };
 
     window.editRow = (date, m, e, leave) => {
         document.getElementById('punchDate').value = date;
@@ -169,11 +157,29 @@ document.addEventListener('DOMContentLoaded', () => {
         window.scrollTo({top: 0, behavior: 'smooth'});
     };
 
-    // Auth Card Toggles
+    function toggleLoader(s) { loader.style.display = s ? 'flex' : 'none'; }
+    
+    document.getElementById('isLeave').onchange = (e) => {
+        const group = document.getElementById('timeInputGroup');
+        group.style.opacity = e.target.checked ? "0.3" : "1";
+        group.style.pointerEvents = e.target.checked ? "none" : "auto";
+    };
+
+    monthFilter.onchange = loadData;
+    document.getElementById('logoutBtn').onclick = () => { localStorage.clear(); location.reload(); };
+
+    // Reset Pass
     document.getElementById('gotoReset').onclick = () => { document.getElementById('loginCard').style.display='none'; document.getElementById('resetCard').style.display='block'; };
     document.getElementById('backToLogin').onclick = () => { document.getElementById('resetCard').style.display='none'; document.getElementById('loginCard').style.display='block'; };
-    
-    document.getElementById('logoutBtn').onclick = () => { localStorage.clear(); location.reload(); };
-    monthFilter.onchange = loadData;
+    document.getElementById('submitReset').onclick = async () => {
+        const u = document.getElementById('resetUser').value.trim();
+        const op = document.getElementById('oldPassword').value;
+        const np = document.getElementById('newPassword').value;
+        toggleLoader(true);
+        try {
+            const res = await fetch(WEB_APP_URL, {method: 'POST', body: JSON.stringify({action: 'changePassword', username: u, oldPassword: op, newPassword: np})});
+            const json = await res.json();
+            if(json.success) { alert("Password Changed!"); location.reload(); } else { alert(json.msg); toggleLoader(false); }
+        } catch(e) { toggleLoader(false); }
+    };
 });
-
