@@ -1,15 +1,15 @@
 /* =========================================
-   1. CORE RESET & MOBILE OPTIMIZATION
+   1. CORE & RESET (Allows Zooming)
    ========================================= */
 :root {
     --primary: #4361ee;
     --primary-dark: #304fd0;
     --success: #2ec4b6;
     --danger: #ef233c;
-    --bg-body: #f1f5f9;
-    --card-bg: #ffffff;
-    --text-main: #1e293b;
-    --text-muted: #64748b;
+    --bg: #f4f7fe;
+    --white: #ffffff;
+    --text: #2b2d42;
+    --muted: #64748b;
 }
 
 * {
@@ -19,20 +19,17 @@
 }
 
 html, body {
-    width: 100%;
-    /* Prevents the 'zoomed' effect by disabling horizontal page scroll */
-    overflow-x: hidden; 
-    background-color: var(--bg-body);
-    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
-    color: var(--text-main);
-    -webkit-text-size-adjust: 100%;
+    background-color: var(--bg);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+    /* Removed overflow-x hidden to allow free zooming/panning */
 }
 
 /* =========================================
    2. AUTHENTICATION (Login / Reset)
    ========================================= */
 .auth-wrapper {
-    width: 100vw;
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -42,16 +39,17 @@ html, body {
 }
 
 .auth-card {
-    background: white;
+    background: var(--white);
     width: 100%;
-    max-width: 400px;
-    padding: 35px 25px;
-    border-radius: 20px;
+    max-width: 420px;
+    padding: 40px 30px;
+    border-radius: 24px;
     text-align: center;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
 }
 
-.auth-icon { font-size: 3.5rem; color: var(--primary); margin-bottom: 15px; }
+.auth-icon { font-size: 4rem; color: var(--primary); margin-bottom: 20px; }
+.auth-card h2 { margin-bottom: 25px; font-weight: 800; font-size: 1.8rem; }
 
 .auth-link {
     color: var(--primary);
@@ -62,94 +60,94 @@ html, body {
     margin-top: 15px;
 }
 
-.auth-link:hover { text-decoration: underline; }
-
 /* =========================================
-   3. NAVIGATION (FULL WIDTH FIX)
+   3. APP NAVIGATION (FULL WIDTH FIX)
    ========================================= */
 .app-wrapper {
-    width: 100%;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 15px;
+    padding: 20px;
+    /* This ensures the wrapper expands to fit the table width if needed */
+    display: table; 
+    width: 100%;
 }
 
 .main-nav {
-    width: 100%; /* Forces 100% of the app-wrapper */
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: white;
-    padding: 12px 20px;
-    border-radius: 12px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.03);
+    background: var(--white);
+    padding: 15px 25px;
+    border-radius: 16px;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
-.nav-user { display: flex; align-items: center; gap: 10px; }
+.nav-user { display: flex; align-items: center; gap: 12px; }
 .nav-avatar {
-    width: 38px; height: 38px;
+    width: 42px; height: 42px;
     background: var(--primary);
     color: white; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-weight: 800; font-size: 1.1rem;
+    font-weight: 800; font-size: 1.2rem;
 }
 
-#welcomeName { font-weight: 700; font-size: 1rem; }
+#welcomeName { font-weight: 700; font-size: 1.1rem; }
 
 .btn-logout {
     background: #fee2e2;
     color: #dc2626;
     border: none;
-    padding: 8px 14px;
-    border-radius: 8px;
+    padding: 10px 18px;
+    border-radius: 10px;
     cursor: pointer;
     font-weight: 700;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
 }
 
 /* =========================================
-   4. DASHBOARD GRID & CARDS
+   4. DASHBOARD GRID & INPUTS
    ========================================= */
 .dashboard-layout {
     display: grid;
-    grid-template-columns: 320px 1fr;
-    gap: 20px;
+    grid-template-columns: 340px 1fr;
+    gap: 25px;
 }
 
-/* Stack cards on mobile */
 @media (max-width: 992px) {
     .dashboard-layout { grid-template-columns: 1fr; }
 }
 
 .card {
-    background: white;
-    border-radius: 18px;
-    padding: 22px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.03);
+    background: var(--white);
+    border-radius: 20px;
+    padding: 25px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
-.form-group { margin-bottom: 15px; }
-.form-group label { display: block; margin-bottom: 5px; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); }
+.form-group { margin-bottom: 18px; }
+.form-group label { display: block; margin-bottom: 8px; font-weight: 700; font-size: 0.9rem; color: var(--muted); }
 
 input, select {
     width: 100%;
-    padding: 12px;
+    padding: 14px;
     border: 1.5px solid #e2e8f0;
-    border-radius: 10px;
+    border-radius: 12px;
     font-size: 1rem;
-    background: white;
+    background: #fff;
 }
 
 /* LEAVE CHECKBOX ALIGNMENT */
 .leave-container {
-    margin: 15px 0;
-    padding: 12px;
+    margin: 20px 0;
+    padding: 15px;
     background: #f8fafc;
-    border-radius: 10px;
-    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    border: 1.5px solid #e2e8f0;
+    display: flex;
+    align-items: center;
 }
 
 .custom-checkbox {
@@ -157,136 +155,151 @@ input, select {
     align-items: center;
     cursor: pointer;
     font-weight: 700;
+    font-size: 1rem;
 }
 
-.custom-checkbox input { width: 20px; height: 20px; margin-right: 10px; cursor: pointer; }
+.custom-checkbox input {
+    width: 22px;
+    height: 22px;
+    margin-right: 12px;
+    cursor: pointer;
+}
 
 /* =========================================
-   5. TABLE (MOBILE SCROLL FIX)
+   5. TABLE (AS IS, NO SHRINKING)
    ========================================= */
 .table-controls {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
-    flex-wrap: wrap;
-    gap: 10px;
+    margin-bottom: 20px;
+    gap: 15px;
 }
 
-/* CRITICAL: This prevents the page from expanding horizontally */
 .table-overflow {
     width: 100%;
-    overflow-x: auto; 
-    -webkit-overflow-scrolling: touch;
-    border-radius: 10px;
-    border: 1px solid #f1f5f9;
+    overflow-x: auto;
+    border-radius: 12px;
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 600px; /* Ensures columns don't squish */
+    min-width: 650px; /* User requested table 'as is' */
 }
 
 th {
     text-align: left;
-    padding: 12px;
+    padding: 15px;
     background: #f8fafc;
-    color: var(--text-muted);
-    font-size: 0.75rem;
+    color: var(--muted);
+    font-size: 0.8rem;
     text-transform: uppercase;
+    border-bottom: 2px solid #edf2f7;
 }
 
 td {
-    padding: 12px;
-    border-bottom: 1px solid #f1f5f9;
-    font-size: 0.95rem;
+    padding: 15px;
+    border-bottom: 1px solid #edf2f7;
+    font-size: 1rem;
 }
 
 /* =========================================
-   6. MONTHLY BALANCE (STYLING ADDED)
+   6. MONTHLY BALANCE (REDESIGNED)
    ========================================= */
-.total-bar {
-    margin-top: 25px;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    padding: 20px;
-    border-radius: 15px;
-    border-left: 5px solid var(--primary);
+.total-bar-card {
+    margin-top: 30px;
+    background: #1e293b;
+    padding: 25px;
+    border-radius: 20px;
+    color: white;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    position: relative;
+    overflow: hidden;
 }
 
-.total-content {
+.total-bar-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; width: 6px; height: 100%;
+    background: var(--primary);
+}
+
+.total-info {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
-.total-label {
-    font-weight: 700;
-    color: var(--text-muted);
-    font-size: 0.95rem;
+.total-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #cbd5e1;
 }
 
-.total-value {
-    font-size: 1.5rem;
+.total-amount {
+    font-size: 1.8rem;
     font-weight: 900;
+    letter-spacing: -0.5px;
 }
 
-/* Dynamic colors for total */
-.total-value.pos { color: var(--success); }
-.total-value.neg { color: var(--danger); }
+.total-amount.pos { color: var(--success); text-shadow: 0 0 10px rgba(46, 196, 182, 0.3); }
+.total-amount.neg { color: #ff6b6b; text-shadow: 0 0 10px rgba(255, 107, 107, 0.3); }
 
 /* =========================================
-   7. BADGES & BUTTONS
+   7. BUTTONS & UI
    ========================================= */
-.badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; }
-.on-time { background: #dcfce7; color: #166534; }
-.late { background: #fee2e2; color: #991b1b; }
-.overtime { background: #dbeafe; color: #1e40af; }
-.leave { background: #f1f5f9; color: #475569; }
-
 .btn-primary {
     width: 100%;
-    padding: 14px;
+    padding: 15px;
     background: var(--primary);
     color: white;
     border: none;
-    border-radius: 10px;
+    border-radius: 12px;
     font-weight: 700;
     cursor: pointer;
-    transition: 0.2s;
+    transition: 0.3s ease;
+    font-size: 1rem;
 }
 
-.btn-primary:hover { background: var(--primary-dark); }
+.btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
 
 .edit-btn {
     background: var(--primary);
     color: white;
     border: none;
-    padding: 8px 12px;
+    padding: 10px 14px;
     border-radius: 8px;
     cursor: pointer;
 }
-h2{
-   margin-bottom: 10%;
-}
+
+.badge { padding: 5px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; }
+.on-time { background: #dcfce7; color: #166534; }
+.late { background: #fee2e2; color: #991b1b; }
+.overtime { background: #dbeafe; color: #1e40af; }
+.leave { background: #f1f5f9; color: #475569; }
 
 /* =========================================
-   8. UTILITIES & RESPONSIVE
+   8. LOADER & RESPONSIVE FIXES
    ========================================= */
 .loader-wrapper {
-    position: fixed; inset: 0; background: rgba(255,255,255,0.8);
+    position: fixed; inset: 0; background: rgba(255,255,255,0.9);
     z-index: 9999; display: flex; align-items: center; justify-content: center;
 }
-.loader { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+.loader { width: 45px; height: 45px; border: 5px solid #f3f3f3; border-top: 5px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-.app-footer { text-align: center; padding: 25px; color: var(--text-muted); font-size: 0.8rem; }
+.app-footer { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 0.85rem; }
 
 @media (max-width: 600px) {
-    .main-nav { padding: 10px 15px; }
-    .btn-logout span { display: none; } /* Hide text on mobile for width */
-    #welcomeName { font-size: 0.9rem; }
-    .total-content { flex-direction: column; align-items: flex-start; gap: 5px; }
-    .total-value { font-size: 1.3rem; }
+    .app-wrapper { padding: 10px; }
+    .main-nav { padding: 12px 15px; }
+    .btn-logout span { display: none; } /* Hide text on mobile */
+    .total-amount { font-size: 1.5rem; }
+    .total-title { font-size: 1rem; }
+    /* Force inputs to be full width and not shrink */
+    .dashboard-layout { width: 100%; }
+    .form-group input, .form-group select { width: 100%; display: block; }
 }
-
