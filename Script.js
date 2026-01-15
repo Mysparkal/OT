@@ -1,30 +1,45 @@
 const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxREId4_macnQe4KOCi5i_zD9L5cmzu2EjwdXRilBZri26_Y3H59S00_a_Pm80NS6QhOA/exec";
 
-document.addEventListener('DOMContentLoaded', () => {
+// Global Loader Function (Defined outside to be accessible everywhere)
+function toggleLoader(show) {
     const loader = document.getElementById('loader');
+    if (loader) loader.style.display = show ? 'flex' : 'none';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
     const monthFilter = document.getElementById('monthFilter');
-    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
     const now = new Date();
 
-    monthFilter.innerHTML = '';
-    months.forEach((m, i) => {
-        let opt = document.createElement('option');
-        opt.value = `${m}-${now.getFullYear()}`;
-        opt.innerHTML = opt.value;
-        if (i === now.getMonth()) opt.selected = true;
-        monthFilter.appendChild(opt);
-    });
+    // 1. Initialize Month Filter
+    if (monthFilter) {
+        monthFilter.innerHTML = '';
+        months.forEach((m, i) => {
+            let opt = document.createElement('option');
+            opt.value = `${m}-${now.getFullYear()}`;
+            opt.innerHTML = opt.value;
+            if (i === now.getMonth()) opt.selected = true;
+            monthFilter.appendChild(opt);
+        });
+    }
 
-    if (localStorage.getItem('user')) showApp(localStorage.getItem('name'));
+    // 2. Check Session
+    if (localStorage.getItem('user')) {
+        showApp(localStorage.getItem('name'));
+    }
 
+    // 3. Login Logic
     document.getElementById('loginBtn').onclick = async () => {
         const u = document.getElementById('username').value.trim();
         const p = document.getElementById('password').value;
-        if (!u || !p) return alert("Please enter credentials");
+        if (!u || !p) return alert("Please enter Username and Password");
 
         toggleLoader(true);
         try {
-            const res = await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'login', username: u, password: p }) });
+            const res = await fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'login', username: u, password: p })
+            });
             const json = await res.json();
             if (json.success) {
                 localStorage.setItem('user', u);
@@ -41,17 +56,15 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function showApp(name) {
-        document.getElementById('loginSection').classList.add('fade-out');
-        setTimeout(() => {
-            document.getElementById('loginSection').style.display = 'none';
-            document.getElementById('appSection').style.display = 'block';
-            document.getElementById('welcomeName').innerText = `Hi ${name}`;
-            document.getElementById('userInitial').innerText = name.charAt(0).toUpperCase();
-            document.getElementById('punchDate').valueAsDate = new Date();
-            loadData();
-        }, 500);
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('appSection').style.display = 'block';
+        document.getElementById('welcomeName').innerText = `Hi ${name}`;
+        document.getElementById('userInitial').innerText = name.charAt(0).toUpperCase();
+        document.getElementById('punchDate').valueAsDate = new Date();
+        loadData();
     }
 
+    // 4. Data Loading
     async function loadData() {
         toggleLoader(true);
         const user = localStorage.getItem('user');
@@ -70,6 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // 5. Save/Sync Logic
     document.getElementById('saveBtn').onclick = async () => {
         const date = document.getElementById('punchDate').value;
         if (!date) return alert("Select Date");
@@ -83,18 +97,26 @@ document.addEventListener('DOMContentLoaded', () => {
             await fetch(WEB_APP_URL, {
                 method: 'POST',
                 body: JSON.stringify({
-                    action: 'saveEntry', username: localStorage.getItem('user'),
-                    date: date, month: monthFilter.value, morning: mInput,
-                    evening: eInput, isLeave: leave, diff: stats.diff, status: stats.status
+                    action: 'saveEntry',
+                    username: localStorage.getItem('user'),
+                    date: date,
+                    month: monthFilter.value,
+                    morning: mInput,
+                    evening: eInput,
+                    isLeave: leave,
+                    diff: stats.diff,
+                    status: stats.status
                 })
             });
             await loadData();
+            alert("Attendance Synced Successfully!");
         } catch (err) {
             alert("Save Failed");
             toggleLoader(false);
         }
     };
 
+    // 6. Table Rendering
     function renderTable(data) {
         const tbody = document.querySelector('#timeTable tbody');
         const totalEl = document.getElementById('totalTime');
@@ -111,8 +133,8 @@ document.addEventListener('DOMContentLoaded', () => {
         data.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach((row, index) => {
             total += parseInt(row.diff || 0);
             const r = tbody.insertRow();
-            r.style.animationDelay = `${index * 0.05}s`;
             r.className = 'fade-in-row';
+            r.style.animationDelay = `${index * 0.05}s`;
 
             const d = row.date.split('-').reverse().join('/');
 
@@ -133,13 +155,12 @@ document.addEventListener('DOMContentLoaded', () => {
         totalEl.className = total < 0 ? "total-amount neg" : "total-amount pos";
     }
 
+    // 7. Global Actions (Window Scope)
     window.deleteRow = async (date) => {
-        // 1. Confirm with user
         if (!confirm(`Are you sure you want to delete the entry for ${date}?`)) return;
-
         toggleLoader(true);
         try {
-            const response = await fetch(WEB_APP_URL, {
+            const res = await fetch(WEB_APP_URL, {
                 method: 'POST',
                 body: JSON.stringify({
                     action: 'deleteEntry',
@@ -147,23 +168,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     date: date
                 })
             });
-
-            if (response.ok) {
-                // 2. Reload data to show the entry is gone
-                await loadData();
-                // Optional: Small toast or alert
-                console.log("Entry deleted successfully");
-            } else {
-                alert("Server returned an error.");
-            }
+            await loadData();
         } catch (e) {
-            console.error("Delete failed:", e);
-            alert("Check your internet connection.");
-        } finally {
+            alert("Delete failed");
             toggleLoader(false);
         }
     };
 
+    window.editRow = (date, m, e, leave) => {
+        document.getElementById('punchDate').value = date;
+        document.getElementById('morningPunch').value = m;
+        document.getElementById('eveningPunch').value = e;
+        document.getElementById('isLeave').checked = leave;
+        document.getElementById('isLeave').dispatchEvent(new Event('change'));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // 8. Calculation Helpers
     function calculateShift(m, e, leave) {
         if (leave) return { diff: 0, status: 'Leave' };
         const toM = t => { const [h, mi] = t.split(':').map(Number); return h * 60 + mi; };
@@ -182,17 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${m < 0 ? '-' : ''}${h}h ${String(mi).padStart(2, '0')}m`;
     }
 
-    window.editRow = (date, m, e, leave) => {
-        document.getElementById('punchDate').value = date;
-        document.getElementById('morningPunch').value = m;
-        document.getElementById('eveningPunch').value = e;
-        document.getElementById('isLeave').checked = leave;
-        document.getElementById('isLeave').dispatchEvent(new Event('change'));
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    function toggleLoader(s) { loader.style.display = s ? 'flex' : 'none'; }
-
+    // 9. UI Events
     document.getElementById('isLeave').onchange = (e) => {
         const group = document.getElementById('timeInputGroup');
         group.style.opacity = e.target.checked ? "0.3" : "1";
@@ -201,19 +212,54 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     monthFilter.onchange = loadData;
+
     document.getElementById('logoutBtn').onclick = () => {
-        if (confirm("Logout from TimeFlow?")) {
+        if (confirm("Logout from TimeFlow Pro?")) {
             localStorage.clear();
             location.reload();
         }
     };
 
+    // 10. Password Reset
     document.getElementById('gotoReset').onclick = () => {
         document.getElementById('loginCard').style.display = 'none';
         document.getElementById('resetCard').style.display = 'block';
     };
+
     document.getElementById('backToLogin').onclick = () => {
         document.getElementById('resetCard').style.display = 'none';
         document.getElementById('loginCard').style.display = 'block';
+    };
+
+    document.getElementById('submitReset').onclick = async () => {
+        const u = document.getElementById('resetUser').value.trim();
+        const op = document.getElementById('oldPassword').value;
+        const np = document.getElementById('newPassword').value;
+
+        if (!u || !op || !np) return alert("Please fill all fields");
+
+        toggleLoader(true);
+        try {
+            const res = await fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: 'changePassword',
+                    username: u,
+                    oldPassword: op,
+                    newPassword: np
+                })
+            });
+            const json = await res.json();
+            if (json.success) {
+                alert("Password Changed Successfully!");
+                location.reload();
+            } else {
+                alert(json.msg || "Reset failed");
+                toggleLoader(false);
+            }
+        } catch (e) {
+            alert("Error connecting to server");
+            toggleLoader(false);
+        }
     };
 });
