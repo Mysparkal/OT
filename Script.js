@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
     const now = new Date();
 
-    // 1. Build Month Filter
+    // Setup Month Filter
     monthFilter.innerHTML = '';
     months.forEach((m, i) => {
         let opt = document.createElement('option');
@@ -17,11 +17,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if(localStorage.getItem('user')) showApp(localStorage.getItem('name'));
 
-    // 2. Authentication
+    // Authentication
     document.getElementById('loginBtn').onclick = async () => {
         const u = document.getElementById('username').value.trim();
         const p = document.getElementById('password').value;
-        if(!u || !p) return alert("Please enter Username and Password");
+        if(!u || !p) return alert("Please enter credentials");
         
         toggleLoader(true);
         try {
@@ -32,9 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('name', json.name);
                 showApp(json.name);
             } else {
-                alert("Incorrect Login Details");
+                alert("Login Failed. Check Username/Password.");
             }
-        } catch (e) { alert("Cannot connect to Google Sheets"); }
+        } catch (e) { alert("Server error. Check your Internet."); }
         toggleLoader(false);
     };
 
@@ -47,19 +47,16 @@ document.addEventListener('DOMContentLoaded', () => {
         loadData();
     }
 
-    // 3. Data Sync & Fetch
     async function loadData() {
         toggleLoader(true);
-        const user = localStorage.getItem('user');
-        const month = monthFilter.value;
         try {
             const res = await fetch(WEB_APP_URL, {
                 method: 'POST', 
-                body: JSON.stringify({ action: 'getEntries', username: user, month: month })
+                body: JSON.stringify({ action: 'getEntries', username: localStorage.getItem('user'), month: monthFilter.value })
             });
             const data = await res.json();
             renderTable(data);
-        } catch (e) { console.error("Error loading table:", e); }
+        } catch (e) { console.error("Error loading data", e); }
         toggleLoader(false);
     }
 
@@ -73,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         toggleLoader(true);
         try {
-            const res = await fetch(WEB_APP_URL, {
+            await fetch(WEB_APP_URL, {
                 method: 'POST', 
                 body: JSON.stringify({
                     action: 'saveEntry', 
@@ -84,9 +81,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     diff: stats.diff, status: stats.status
                 })
             });
-            await loadData(); // Refresh table
-            alert("Attendance Synced!");
-        } catch (err) { alert("Save Failed"); }
+            await loadData(); // Reload table
+            alert("Sheet Synced successfully!");
+        } catch (err) { alert("Save Failed. Try again."); }
         toggleLoader(false);
     };
 
@@ -110,7 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!data || data.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px;">No records found for this month.</td></tr>';
         } else {
-            // Sort by Date
             data.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(row => {
                 total += parseInt(row.diff || 0);
                 const r = tbody.insertRow();
@@ -128,7 +124,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('totalTime').className = total < 0 ? 'neg' : 'pos';
     }
 
-    // 4. UI Support
     window.editRow = (date, m, e, leave) => {
         document.getElementById('punchDate').value = date;
         document.getElementById('morningPunch').value = m;
@@ -146,9 +141,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function toggleLoader(s) { document.getElementById('loader').style.display = s ? 'flex' : 'none'; }
     
     document.getElementById('isLeave').onchange = (e) => {
-        const group = document.getElementById('timeInputGroup');
-        group.style.opacity = e.target.checked ? "0.3" : "1";
-        group.style.pointerEvents = e.target.checked ? "none" : "auto";
+        const g = document.getElementById('timeInputGroup');
+        g.style.opacity = e.target.checked ? "0.3" : "1";
+        g.style.pointerEvents = e.target.checked ? "none" : "auto";
     };
 
     monthFilter.onchange = loadData;
@@ -165,6 +160,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await fetch(WEB_APP_URL, {method: 'POST', body: JSON.stringify({action: 'changePassword', username: u, oldPassword: op, newPassword: np})});
         const json = await res.json();
         toggleLoader(false);
-        if(json.success) { alert("Password Changed!"); location.reload(); } else { alert(json.msg); }
+        if(json.success) { alert("Password Updated Successfully!"); location.reload(); } else { alert(json.msg); }
     };
 });
