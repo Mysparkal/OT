@@ -2,11 +2,10 @@ const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxREId4_macnQe4KOCi
 
 document.addEventListener('DOMContentLoaded', () => {
     const monthFilter = document.getElementById('monthFilter');
-    const loader = document.getElementById('loader');
-
-    // Init Month Filter
     const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
     const now = new Date();
+
+    // 1. Build Month Filter
     monthFilter.innerHTML = '';
     months.forEach((m, i) => {
         let opt = document.createElement('option');
@@ -18,11 +17,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if(localStorage.getItem('user')) showApp(localStorage.getItem('name'));
 
-    // --- Authentication ---
+    // 2. Authentication
     document.getElementById('loginBtn').onclick = async () => {
         const u = document.getElementById('username').value.trim();
         const p = document.getElementById('password').value;
-        if(!u || !p) return;
+        if(!u || !p) return alert("Please enter Username and Password");
+        
         toggleLoader(true);
         try {
             const res = await fetch(WEB_APP_URL, {method: 'POST', body: JSON.stringify({action: 'login', username: u, password: p})});
@@ -32,9 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('name', json.name);
                 showApp(json.name);
             } else {
-                alert("Login Failed");
+                alert("Incorrect Login Details");
             }
-        } catch (e) { alert("Server Error"); }
+        } catch (e) { alert("Cannot connect to Google Sheets"); }
         toggleLoader(false);
     };
 
@@ -47,6 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loadData();
     }
 
+    // 3. Data Sync & Fetch
     async function loadData() {
         toggleLoader(true);
         const user = localStorage.getItem('user');
@@ -58,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const data = await res.json();
             renderTable(data);
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error("Error loading table:", e); }
         toggleLoader(false);
     }
 
@@ -66,23 +67,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const date = document.getElementById('punchDate').value;
         if(!date) return alert("Select Date");
         const leave = document.getElementById('isLeave').checked;
-        const m = document.getElementById('morningPunch').value;
-        const e = document.getElementById('eveningPunch').value;
-        const stats = calculateShift(m, e, leave);
+        const mInput = document.getElementById('morningPunch').value;
+        const eInput = document.getElementById('eveningPunch').value;
+        const stats = calculateShift(mInput, eInput, leave);
 
         toggleLoader(true);
         try {
-            await fetch(WEB_APP_URL, {
+            const res = await fetch(WEB_APP_URL, {
                 method: 'POST', 
                 body: JSON.stringify({
-                    action: 'saveEntry', username: localStorage.getItem('user'), date: date, 
-                    month: monthFilter.value, morning: m, evening: e, isLeave: leave, 
+                    action: 'saveEntry', 
+                    username: localStorage.getItem('user'), 
+                    date: date, 
+                    month: monthFilter.value,
+                    morning: mInput, evening: eInput, isLeave: leave, 
                     diff: stats.diff, status: stats.status
                 })
             });
-            await loadData();
-            alert("Sync Complete!");
-        } catch (err) { alert("Sync Error"); }
+            await loadData(); // Refresh table
+            alert("Attendance Synced!");
+        } catch (err) { alert("Save Failed"); }
         toggleLoader(false);
     };
 
@@ -104,8 +108,9 @@ document.addEventListener('DOMContentLoaded', () => {
         tbody.innerHTML = '';
         let total = 0;
         if (!data || data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No data found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px;">No records found for this month.</td></tr>';
         } else {
+            // Sort by Date
             data.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(row => {
                 total += parseInt(row.diff || 0);
                 const r = tbody.insertRow();
@@ -123,6 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('totalTime').className = total < 0 ? 'neg' : 'pos';
     }
 
+    // 4. UI Support
     window.editRow = (date, m, e, leave) => {
         document.getElementById('punchDate').value = date;
         document.getElementById('morningPunch').value = m;
@@ -137,18 +143,18 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${m < 0 ? '-' : ''}${h}h ${String(mi).padStart(2, '0')}m`;
     }
 
-    function toggleLoader(s) { loader.style.display = s ? 'flex' : 'none'; }
+    function toggleLoader(s) { document.getElementById('loader').style.display = s ? 'flex' : 'none'; }
     
     document.getElementById('isLeave').onchange = (e) => {
-        const g = document.getElementById('timeInputGroup');
-        g.style.opacity = e.target.checked ? "0.3" : "1";
-        g.style.pointerEvents = e.target.checked ? "none" : "auto";
+        const group = document.getElementById('timeInputGroup');
+        group.style.opacity = e.target.checked ? "0.3" : "1";
+        group.style.pointerEvents = e.target.checked ? "none" : "auto";
     };
 
     monthFilter.onchange = loadData;
     document.getElementById('logoutBtn').onclick = () => { localStorage.clear(); location.reload(); };
 
-    // Reset Pass logic
+    // Password Reset
     document.getElementById('gotoReset').onclick = () => { document.getElementById('loginCard').style.display='none'; document.getElementById('resetCard').style.display='block'; };
     document.getElementById('backToLogin').onclick = () => { document.getElementById('resetCard').style.display='none'; document.getElementById('loginCard').style.display='block'; };
     document.getElementById('submitReset').onclick = async () => {
@@ -159,6 +165,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await fetch(WEB_APP_URL, {method: 'POST', body: JSON.stringify({action: 'changePassword', username: u, oldPassword: op, newPassword: np})});
         const json = await res.json();
         toggleLoader(false);
-        if(json.success) { alert("Success!"); location.reload(); } else { alert(json.msg); }
+        if(json.success) { alert("Password Changed!"); location.reload(); } else { alert(json.msg); }
     };
 });
