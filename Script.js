@@ -100,29 +100,40 @@ document.addEventListener('DOMContentLoaded', () => {
         return { diff, status };
     }
 
-    function renderTable(data) {
-        const tbody = document.querySelector('#timeTable tbody');
-        tbody.innerHTML = '';
-        let total = 0;
-        if (!data || data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px;">No records found for this month.</td></tr>';
-        } else {
-            data.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(row => {
-                total += parseInt(row.diff || 0);
-                const r = tbody.insertRow();
-                r.innerHTML = `
-                    <td>${row.date.split('-').reverse().join('/')}</td>
-                    <td>${row.isLeave ? '-' : row.morning}</td>
-                    <td>${row.isLeave ? '-' : row.evening}</td>
-                    <td><span class="badge ${row.status.toLowerCase().replace(' ', '-')}">${row.status}</span></td>
-                    <td class="${row.diff < 0 ? 'neg' : 'pos'}">${formatMins(row.diff)}</td>
-                    <td><button class="edit-btn" onclick="editRow('${row.date}','${row.morning}','${row.evening}',${row.isLeave})"><i class="fas fa-edit"></i></button></td>
-                `;
-            });
-        }
-        document.getElementById('totalTime').innerText = formatMins(total);
-        document.getElementById('totalTime').className = total < 0 ? 'neg' : 'pos';
+function renderTable(data) {
+    const tbody = document.querySelector('#timeTable tbody');
+    tbody.innerHTML = '';
+    let total = 0;
+    
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px;">No records found for this month.</td></tr>';
+        document.getElementById('totalTime').innerText = "0h 00m";
+        return;
     }
+
+    data.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(row => {
+        total += parseInt(row.diff || 0);
+        const r = tbody.insertRow();
+        
+        // Clean formatting for the date
+        const displayDate = row.date.includes('-') ? row.date.split('-').reverse().join('/') : row.date;
+
+        r.innerHTML = `
+            <td>${displayDate}</td>
+            <td>${row.isLeave ? '-' : row.morning}</td>
+            <td>${row.isLeave ? '-' : row.evening}</td>
+            <td><span class="badge ${row.status.toLowerCase().replace(' ', '-')}">${row.status}</span></td>
+            <td class="${row.diff < 0 ? 'neg' : 'pos'}">${formatMins(row.diff)}</td>
+            <td>
+                <button class="edit-btn" onclick="editRow('${row.date}','${row.morning}','${row.evening}',${row.isLeave})" title="Edit Entry">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+            </td>
+        `;
+    });
+    document.getElementById('totalTime').innerText = formatMins(total);
+    document.getElementById('totalTime').className = total < 0 ? 'neg' : 'pos';
+}
 
     window.editRow = (date, m, e, leave) => {
         document.getElementById('punchDate').value = date;
@@ -163,3 +174,4 @@ document.addEventListener('DOMContentLoaded', () => {
         if(json.success) { alert("Password Updated Successfully!"); location.reload(); } else { alert(json.msg); }
     };
 });
+
