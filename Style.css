@@ -55,3 +55,48 @@ td { padding: 15px; border-bottom: 1px solid #f1f5f9; font-size: 0.95rem; }
 .loader-wrapper { position: fixed; inset: 0; background: rgba(255,255,255,0.85); z-index: 1000; display: flex; align-items: center; justify-content: center; }
 .loader { width: 45px; height: 45px; border: 5px solid #f3f3f3; border-top: 5px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* Action Button Styling */
+.edit-btn {
+    background-color: var(--primary); /* Blue background */
+    color: white !important;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    min-width: 40px; /* Ensures it's not a dot */
+    min-height: 35px;
+    font-size: 1rem;
+}
+
+.edit-btn i {
+    color: white !important;
+    display: block; /* Ensures icon takes up space */
+}
+
+.edit-btn:hover {
+    background-color: #2b44b1; /* Darker blue on hover */
+    transform: scale(1.05);
+}
+
+/* Ensure the Table Action Column header is wide enough */
+#timeTable th:last-child {
+    text-align: center;
+    width: 80px;
+}
+
+#timeTable td:last-child {
+    text-align: center;
+}
+
+/* Responsive fix for icons */
+@media (max-width: 600px) {
+    .edit-btn {
+        padding: 6px 10px;
+        font-size: 0.9rem;
+    }
+}
