@@ -57,7 +57,7 @@ html, body {
     font-weight: 700;
     font-size: 0.95rem;
     display: inline-block;
-    margin-top: 15px;
+    margin-top: 20px;
 }
 
 /* =========================================
@@ -137,6 +137,10 @@ input, select {
     border-radius: 12px;
     font-size: 1rem;
     background: #fff;
+}
+input{
+   padding: 16px;
+   margin-bottom: 10px;
 }
 
 /* LEAVE CHECKBOX ALIGNMENT */
@@ -303,3 +307,4 @@ td {
     .dashboard-layout { width: 100%; }
     .form-group input, .form-group select { width: 100%; display: block; }
 }
+
