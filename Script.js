@@ -106,7 +106,7 @@ function renderTable(data) {
     let total = 0;
     
     if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px;">No records found for this month.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px;">No entries found.</td></tr>';
         document.getElementById('totalTime').innerText = "0h 00m";
         return;
     }
@@ -114,8 +114,6 @@ function renderTable(data) {
     data.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(row => {
         total += parseInt(row.diff || 0);
         const r = tbody.insertRow();
-        
-        // Clean formatting for the date
         const displayDate = row.date.includes('-') ? row.date.split('-').reverse().join('/') : row.date;
 
         r.innerHTML = `
@@ -125,7 +123,7 @@ function renderTable(data) {
             <td><span class="badge ${row.status.toLowerCase().replace(' ', '-')}">${row.status}</span></td>
             <td class="${row.diff < 0 ? 'neg' : 'pos'}">${formatMins(row.diff)}</td>
             <td>
-                <button class="edit-btn" onclick="editRow('${row.date}','${row.morning}','${row.evening}',${row.isLeave})" title="Edit Entry">
+                <button class="edit-btn" onclick="editRow('${row.date}','${row.morning}','${row.evening}',${row.isLeave})">
                     <i class="fa-solid fa-pen-to-square"></i>
                 </button>
             </td>
@@ -174,4 +172,5 @@ function renderTable(data) {
         if(json.success) { alert("Password Updated Successfully!"); location.reload(); } else { alert(json.msg); }
     };
 });
+
 
