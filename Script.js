@@ -3,32 +3,30 @@ const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxREId4_macnQe4KOCi
 document.addEventListener('DOMContentLoaded', () => {
     const loader = document.getElementById('loader');
     const monthFilter = document.getElementById('monthFilter');
-    const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     const now = new Date();
 
-    // Init Month Filter
     monthFilter.innerHTML = '';
     months.forEach((m, i) => {
         let opt = document.createElement('option');
         opt.value = `${m}-${now.getFullYear()}`;
         opt.innerHTML = opt.value;
-        if(i === now.getMonth()) opt.selected = true;
+        if (i === now.getMonth()) opt.selected = true;
         monthFilter.appendChild(opt);
     });
 
-    if(localStorage.getItem('user')) showApp(localStorage.getItem('name'));
+    if (localStorage.getItem('user')) showApp(localStorage.getItem('name'));
 
-    // Authentication
     document.getElementById('loginBtn').onclick = async () => {
         const u = document.getElementById('username').value.trim();
         const p = document.getElementById('password').value;
-        if(!u || !p) return alert("Please enter Username and Password");
-        
+        if (!u || !p) return alert("Please enter credentials");
+
         toggleLoader(true);
         try {
-            const res = await fetch(WEB_APP_URL, {method: 'POST', body: JSON.stringify({action: 'login', username: u, password: p})});
+            const res = await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'login', username: u, password: p }) });
             const json = await res.json();
-            if(json.success) {
+            if (json.success) {
                 localStorage.setItem('user', u);
                 localStorage.setItem('name', json.name);
                 showApp(json.name);
@@ -36,19 +34,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert("Incorrect Login Details");
                 toggleLoader(false);
             }
-        } catch (e) { 
+        } catch (e) {
             alert("Network Error: Could not connect to Google Script.");
-            toggleLoader(false); 
+            toggleLoader(false);
         }
     };
 
     function showApp(name) {
-        document.getElementById('loginSection').style.display = 'none';
-        document.getElementById('appSection').style.display = 'block';
-        document.getElementById('welcomeName').innerText = `Hi ${name}`;
-        document.getElementById('userInitial').innerText = name.charAt(0).toUpperCase();
-        document.getElementById('punchDate').valueAsDate = new Date();
-        loadData();
+        document.getElementById('loginSection').classList.add('fade-out');
+        setTimeout(() => {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('appSection').style.display = 'block';
+            document.getElementById('welcomeName').innerText = `Hi ${name}`;
+            document.getElementById('userInitial').innerText = name.charAt(0).toUpperCase();
+            document.getElementById('punchDate').valueAsDate = new Date();
+            loadData();
+        }, 500);
     }
 
     async function loadData() {
@@ -57,21 +58,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const month = monthFilter.value;
         try {
             const res = await fetch(WEB_APP_URL, {
-                method: 'POST', 
+                method: 'POST',
                 body: JSON.stringify({ action: 'getEntries', username: user, month: month })
             });
             const data = await res.json();
             renderTable(data);
-        } catch (e) { 
-            console.error("Error loading data:", e); 
+        } catch (e) {
+            console.error("Error loading data:", e);
         } finally {
-            toggleLoader(false); // This STOPS the loader no matter what happens
+            toggleLoader(false);
         }
     }
 
     document.getElementById('saveBtn').onclick = async () => {
         const date = document.getElementById('punchDate').value;
-        if(!date) return alert("Select Date");
+        if (!date) return alert("Select Date");
         const leave = document.getElementById('isLeave').checked;
         const mInput = document.getElementById('morningPunch').value;
         const eInput = document.getElementById('eveningPunch').value;
@@ -80,81 +81,104 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleLoader(true);
         try {
             await fetch(WEB_APP_URL, {
-                method: 'POST', 
+                method: 'POST',
                 body: JSON.stringify({
-                    action: 'saveEntry', 
-                    username: localStorage.getItem('user'), 
-                    date: date, 
-                    month: monthFilter.value,
-                    morning: mInput, evening: eInput, isLeave: leave, 
-                    diff: stats.diff, status: stats.status
+                    action: 'saveEntry', username: localStorage.getItem('user'),
+                    date: date, month: monthFilter.value, morning: mInput,
+                    evening: eInput, isLeave: leave, diff: stats.diff, status: stats.status
                 })
             });
             await loadData();
-            alert("Attendance Synced!");
-        } catch (err) { 
-            alert("Save Failed"); 
+        } catch (err) {
+            alert("Save Failed");
             toggleLoader(false);
         }
     };
 
     function renderTable(data) {
-    const tbody = document.querySelector('#timeTable tbody');
-    const totalEl = document.getElementById('totalTime');
-    tbody.innerHTML = '';
-    let total = 0;
+        const tbody = document.querySelector('#timeTable tbody');
+        const totalEl = document.getElementById('totalTime');
+        tbody.innerHTML = '';
+        let total = 0;
 
-    if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 30px;">No entries found in sheet.</td></tr>';
-        totalEl.innerText = "0h 00m";
-        totalEl.className = "total-amount";
-        return;
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 30px;">No records found.</td></tr>';
+            totalEl.innerText = "0h 00m";
+            totalEl.className = "total-amount";
+            return;
+        }
+
+        data.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach((row, index) => {
+            total += parseInt(row.diff || 0);
+            const r = tbody.insertRow();
+            r.style.animationDelay = `${index * 0.05}s`;
+            r.className = 'fade-in-row';
+
+            const d = row.date.split('-').reverse().join('/');
+
+            r.innerHTML = `
+                <td>${d}</td>
+                <td>${row.isLeave ? '<span class="dash">-</span>' : row.morning}</td>
+                <td>${row.isLeave ? '<span class="dash">-</span>' : row.evening}</td>
+                <td><span class="badge ${row.status.toLowerCase().replace(' ', '-')}">${row.status}</span></td>
+                <td class="${row.diff < 0 ? 'neg' : 'pos'}">${formatMins(row.diff)}</td>
+                <td class="action-cell">
+                    <button class="btn-action edit" onclick="editRow('${row.date}','${row.morning}','${row.evening}',${row.isLeave})" title="Edit"><i class="fas fa-pen"></i></button>
+                    <button class="btn-action delete" onclick="deleteRow('${row.date}')" title="Delete"><i class="fas fa-trash"></i></button>
+                </td>
+            `;
+        });
+
+        totalEl.innerText = formatMins(total);
+        totalEl.className = total < 0 ? "total-amount neg" : "total-amount pos";
     }
 
-    // Sort entries by date
-    data.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(row => {
-        total += parseInt(row.diff || 0);
-        const r = tbody.insertRow();
-        
-        // Format date to DD/MM/YYYY
-        const d = row.date.split('-').reverse().join('/');
+    window.deleteRow = async (date) => {
+        // 1. Confirm with user
+        if (!confirm(`Are you sure you want to delete the entry for ${date}?`)) return;
 
-        r.innerHTML = `
-            <td>${d}</td>
-            <td>${row.isLeave ? '-' : row.morning}</td>
-            <td>${row.isLeave ? '-' : row.evening}</td>
-            <td><span class="badge ${row.status.toLowerCase().replace(' ', '-')}">${row.status}</span></td>
-            <td class="${row.diff < 0 ? 'neg' : 'pos'}">${formatMins(row.diff)}</td>
-            <td><button class="edit-btn" onclick="editRow('${row.date}','${row.morning}','${row.evening}',${row.isLeave})"><i class="fas fa-edit"></i></button></td>
-        `;
-    });
+        toggleLoader(true);
+        try {
+            const response = await fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: 'deleteEntry',
+                    username: localStorage.getItem('user'),
+                    date: date
+                })
+            });
 
-    totalEl.innerText = formatMins(total);
-    // Apply positive/negative colors to Monthly Balance
-    if (total < 0) { 
-        totalEl.className = "total-amount neg"; 
-    } else if (total > 0) { 
-        totalEl.className = "total-amount pos"; 
-    } else { 
-        totalEl.className = "total-amount"; 
-    }
-}
+            if (response.ok) {
+                // 2. Reload data to show the entry is gone
+                await loadData();
+                // Optional: Small toast or alert
+                console.log("Entry deleted successfully");
+            } else {
+                alert("Server returned an error.");
+            }
+        } catch (e) {
+            console.error("Delete failed:", e);
+            alert("Check your internet connection.");
+        } finally {
+            toggleLoader(false);
+        }
+    };
 
     function calculateShift(m, e, leave) {
-        if(leave) return { diff: 0, status: 'Leave' };
-        const toM = t => { const [h, mi] = t.split(':').map(Number); return h*60+mi; };
+        if (leave) return { diff: 0, status: 'Leave' };
+        const toM = t => { const [h, mi] = t.split(':').map(Number); return h * 60 + mi; };
         const inM = toM(m), outM = toM(e), lateL = toM('09:30'), baseS = toM('09:15'), stdE = toM('19:00');
         let diff = 0, status = "On-Time";
-        if(inM > lateL) { diff -= (inM - baseS); status = "Late"; }
+        if (inM > lateL) { diff -= (inM - baseS); status = "Late"; }
         diff += (outM - stdE);
-        if(diff > 0 && status !== "Late") status = "Overtime";
-        if(diff < 0 && status === "On-Time") status = "Early-Exit";
-        if(diff >= 0 && status === "Late") status = "Balanced";
+        if (diff > 0 && status !== "Late") status = "Overtime";
+        if (diff < 0 && status === "On-Time") status = "Early-Exit";
+        if (diff >= 0 && status === "Late") status = "Balanced";
         return { diff, status };
     }
 
     function formatMins(m) {
-        const h = Math.floor(Math.abs(m)/60), mi = Math.abs(m)%60;
+        const h = Math.floor(Math.abs(m) / 60), mi = Math.abs(m) % 60;
         return `${m < 0 ? '-' : ''}${h}h ${String(mi).padStart(2, '0')}m`;
     }
 
@@ -164,33 +188,32 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('eveningPunch').value = e;
         document.getElementById('isLeave').checked = leave;
         document.getElementById('isLeave').dispatchEvent(new Event('change'));
-        window.scrollTo({top: 0, behavior: 'smooth'});
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     function toggleLoader(s) { loader.style.display = s ? 'flex' : 'none'; }
-    
+
     document.getElementById('isLeave').onchange = (e) => {
         const group = document.getElementById('timeInputGroup');
         group.style.opacity = e.target.checked ? "0.3" : "1";
+        group.style.filter = e.target.checked ? "grayscale(1)" : "none";
         group.style.pointerEvents = e.target.checked ? "none" : "auto";
     };
 
     monthFilter.onchange = loadData;
-    document.getElementById('logoutBtn').onclick = () => { localStorage.clear(); location.reload(); };
+    document.getElementById('logoutBtn').onclick = () => {
+        if (confirm("Logout from TimeFlow?")) {
+            localStorage.clear();
+            location.reload();
+        }
+    };
 
-    // Reset Pass
-    document.getElementById('gotoReset').onclick = () => { document.getElementById('loginCard').style.display='none'; document.getElementById('resetCard').style.display='block'; };
-    document.getElementById('backToLogin').onclick = () => { document.getElementById('resetCard').style.display='none'; document.getElementById('loginCard').style.display='block'; };
-    document.getElementById('submitReset').onclick = async () => {
-        const u = document.getElementById('resetUser').value.trim();
-        const op = document.getElementById('oldPassword').value;
-        const np = document.getElementById('newPassword').value;
-        toggleLoader(true);
-        try {
-            const res = await fetch(WEB_APP_URL, {method: 'POST', body: JSON.stringify({action: 'changePassword', username: u, oldPassword: op, newPassword: np})});
-            const json = await res.json();
-            if(json.success) { alert("Password Changed!"); location.reload(); } else { alert(json.msg); toggleLoader(false); }
-        } catch(e) { toggleLoader(false); }
+    document.getElementById('gotoReset').onclick = () => {
+        document.getElementById('loginCard').style.display = 'none';
+        document.getElementById('resetCard').style.display = 'block';
+    };
+    document.getElementById('backToLogin').onclick = () => {
+        document.getElementById('resetCard').style.display = 'none';
+        document.getElementById('loginCard').style.display = 'block';
     };
 });
-
