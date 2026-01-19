@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,8 +10,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link rel="stylesheet" href="Style.css">
 </head>
+
 <body>
-    <div id="loader" class="loader-wrapper" style="display:none;"><div class="loader"></div></div>
+    <div id="loader" class="loader-wrapper" style="display:none;">
+        <div class="loader"></div>
+    </div>
 
     <!-- AUTHENTICATION SECTION -->
     <section id="loginSection" class="auth-wrapper">
@@ -57,7 +61,7 @@
                 <div class="nav-avatar" id="userInitial">?</div>
                 <div class="nav-text">
                     <span id="welcomeName">Hi User</span>
-                    <small>Employee Dashboard</small>
+                    <small id="shiftDisplay">Shift: --:-- to --:--</small>
                 </div>
             </div>
             <button id="logoutBtn" class="btn-logout">
@@ -74,7 +78,7 @@
                         <label>Entry Date</label>
                         <input type="date" id="punchDate">
                     </div>
-                    
+
                     <div class="leave-toggle">
                         <label class="switch">
                             <input type="checkbox" id="isLeave">
@@ -116,7 +120,7 @@
                             <select id="monthFilter" class="custom-select"></select>
                         </div>
                     </div>
-                    
+
                     <div class="table-wrapper">
                         <table id="timeTable">
                             <thead>
@@ -145,5 +149,5 @@
 
     <script src="Script.js"></script>
 </body>
-</html>
 
+</html>
