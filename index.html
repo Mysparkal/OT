@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeFlow — Attendance</title>
+    <link rel="icon" type="image/x-icon" href="https://media.lordicon.com/icons/wired/flat/45-clock-time.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="Style.css">
+</head>
+
+<body>
+    <!-- Loader -->
+    <div id="loader" class="loader-overlay" style="display:none;">
+        <div class="loader-pill">
+            <div class="spinner"></div>
+            <span>Syncing...</span>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="confirmModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
+        <div class="modal-box">
+            <div class="modal-icon">
+                <i class="fas fa-trash-alt"></i>
+            </div>
+            <h3>Delete this entry?</h3>
+            <p id="confirmModalText">This attendance record will be permanently removed.</p>
+            <div class="modal-actions">
+                <button type="button" id="cancelDeleteBtn" class="btn-secondary">Cancel</button>
+                <button type="button" id="confirmDeleteBtn" class="btn-danger">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUTHENTICATION -->
+    <section id="loginSection" class="auth-page">
+        <div class="auth-card" id="loginCard">
+            <div class="brand-mark">
+                <i class="fas fa-clock"></i>
+            </div>
+            <h1>Welcome to TimeFlow</h1>
+            <p class="auth-sub">Sign in to record your daily attendance.</p>
+
+            <form id="loginForm" novalidate>
+                <div class="field">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" placeholder="Your username" autocomplete="username" required>
+                </div>
+
+                <div class="field">
+                    <label for="password">Password</label>
+                    <div class="pass-wrap">
+                        <input type="password" id="password" placeholder="Your password" autocomplete="current-password" required>
+                        <button type="button" class="eye-btn" data-target="password" aria-label="Show password">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <p id="errorMsg" class="inline-error" role="alert"></p>
+
+                <button type="submit" id="loginBtn" class="btn-primary">Sign In</button>
+            </form>
+
+            <button type="button" id="gotoReset" class="text-link">Forgot or reset password?</button>
+        </div>
+
+        <div class="auth-card" id="resetCard" style="display:none;">
+            <div class="brand-mark secondary">
+                <i class="fas fa-key"></i>
+            </div>
+            <h1>Reset Password</h1>
+            <p class="auth-sub">Enter your current and new password below.</p>
+
+            <form id="resetForm" novalidate>
+                <div class="field">
+                    <label for="resetUser">Username</label>
+                    <input type="text" id="resetUser" placeholder="Your username" autocomplete="username" required>
+                </div>
+
+                <div class="field">
+                    <label for="oldPassword">Current Password</label>
+                    <div class="pass-wrap">
+                        <input type="password" id="oldPassword" placeholder="Current password" required>
+                        <button type="button" class="eye-btn" data-target="oldPassword" aria-label="Show password">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="newPassword">New Password</label>
+                    <div class="pass-wrap">
+                        <input type="password" id="newPassword" placeholder="New password" required>
+                        <button type="button" class="eye-btn" data-target="newPassword" aria-label="Show password">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <p id="resetMsg" class="inline-error" role="alert"></p>
+
+                <button type="submit" id="submitReset" class="btn-primary">Update Password</button>
+            </form>
+
+            <button type="button" id="backToLogin" class="text-link">Back to Sign In</button>
+        </div>
+    </section>
+
+    <!-- DASHBOARD -->
+    <div id="appSection" class="app-shell" style="display:none;">
+        <!-- Clean Top Header -->
+        <header class="topbar">
+            <div class="user-chip">
+                <div class="avatar" id="userInitial">?</div>
+                <div>
+                    <strong id="welcomeName">Hi User</strong>
+                    <span id="shiftDisplay">Shift: 09:15 AM – 07:00 PM</span>
+                </div>
+            </div>
+
+            <button id="logoutBtn" class="btn-logout" title="Sign Out">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Sign Out</span>
+            </button>
+        </header>
+
+        <!-- Clean 2-Column Workspace -->
+        <div class="workspace">
+            <!-- Left: Simple Daily Entry Card -->
+            <aside class="entry-column">
+                <div class="card" id="entryFormCard">
+                    <div class="card-head">
+                        <h2>Daily Entry</h2>
+                        <button type="button" id="cancelEditBtn" class="cancel-edit" style="display:none;">
+                            Cancel Edit
+                        </button>
+                    </div>
+
+                    <!-- Simple Shift Toggle -->
+                    <div class="field">
+                        <label>Select Shift</label>
+                        <div class="segmented" role="radiogroup" aria-label="Select Shift">
+                            <button type="button" class="seg-btn active" data-shift="09:15-19:00">
+                                <strong>09:15 – 07:00</strong>
+                                <small>15m grace</small>
+                            </button>
+                            <button type="button" class="seg-btn" data-shift="09:30-18:30">
+                                <strong>09:30 – 06:30</strong>
+                                <small>No grace</small>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Date -->
+                    <div class="field">
+                        <label for="punchDate">Date</label>
+                        <input type="date" id="punchDate">
+                    </div>
+
+                    <!-- Leave Switch -->
+                    <label class="leave-row" for="isLeave">
+                        <span>Mark this day as Leave</span>
+                        <span class="switch">
+                            <input type="checkbox" id="isLeave">
+                            <span class="slider"></span>
+                        </span>
+                    </label>
+
+                    <!-- Time Inputs (auto-hidden when Leave is ON) -->
+                    <div id="timeInputGroup" class="time-section">
+                        <div class="time-grid">
+                            <div class="field">
+                                <label for="morningPunch">Morning In</label>
+                                <input type="time" id="morningPunch" value="09:15">
+                            </div>
+                            <div class="field">
+                                <label for="eveningPunch">Evening Out</label>
+                                <input type="time" id="eveningPunch" value="19:00">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Simple 1-line Summary before saving -->
+                    <div class="preview-strip">
+                        <span id="previewBadge" class="badge on-time">On-Time</span>
+                        <span id="previewDiff" class="preview-mins">0 min</span>
+                    </div>
+
+                    <button type="button" id="saveBtn" class="btn-primary">
+                        <i class="fas fa-check"></i>
+                        <span id="saveBtnText">Save Entry</span>
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Right: Clean Attendance Table -->
+            <main class="logs-column">
+                <div class="card">
+                    <div class="logs-head">
+                        <div>
+                            <h2>Attendance Logs</h2>
+                            <p class="logs-meta">
+                                Monthly Balance: <strong id="totalTime" class="neutral">0h 00m</strong>
+                            </p>
+                        </div>
+
+                        <select id="monthFilter" class="month-select" aria-label="Select Month"></select>
+                    </div>
+
+                    <div class="table-wrap">
+                        <table id="timeTable">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>In</th>
+                                    <th>Out</th>
+                                    <th>Status</th>
+                                    <th>Daily +/-</th>
+                                    <th class="col-actions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <footer class="app-footer">
+        Built with <i class="fas fa-heart"></i> by <strong>Raj Saxena</strong> &copy; 2026
+    </footer>
+
+    <script src="Script.js"></script>
+</body>
+
+</html>
