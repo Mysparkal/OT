@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeFlow — Smart Attendance</title>
+    <link rel="icon" type="image/x-icon" href="https://media.lordicon.com/icons/wired/flat/45-clock-time.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- Ambient Animated Background -->
+    <div class="bg-ambient" aria-hidden="true">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+        <div class="bg-grid"></div>
+    </div>
+
+    <!-- Global Loader -->
+    <div id="loader" class="loader-wrapper" style="display:none;">
+        <div class="loader-box">
+            <div class="loader-ring"></div>
+            <span>Syncing with Cloud...</span>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="confirmModal" class="modal-backdrop" style="display:none;" role="dialog" aria-modal="true">
+        <div class="modal-card">
+            <div class="modal-icon danger">
+                <i class="fas fa-trash-alt"></i>
+            </div>
+            <h3>Delete Entry?</h3>
+            <p id="confirmModalText">Are you sure you want to remove this attendance record? This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button type="button" id="cancelDeleteBtn" class="btn-ghost">Cancel</button>
+                <button type="button" id="confirmDeleteBtn" class="btn-danger">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUTHENTICATION SECTION -->
+    <section id="loginSection" class="auth-wrapper">
+        <div class="auth-card" id="loginCard">
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <span class="brand-pill">TimeFlow 2.0</span>
+                <h2>Welcome Back</h2>
+                <p>Sign in to manage your shifts and attendance logs.</p>
+            </div>
+
+            <form id="loginForm" novalidate>
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <div class="input-icon-wrap">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" id="username" placeholder="Enter your username" autocomplete="username" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-icon-wrap">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password" required>
+                        <button type="button" class="toggle-pass" data-target="password" aria-label="Toggle password visibility">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <p id="errorMsg" class="error-text" role="alert"></p>
+
+                <button type="submit" id="loginBtn" class="btn-primary btn-glow">
+                    <span>Sign In</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                <a href="#" id="gotoReset" class="auth-link">
+                    <i class="fas fa-shield-alt"></i> Reset Password?
+                </a>
+            </div>
+        </div>
+
+        <div class="auth-card" id="resetCard" style="display:none;">
+            <div class="auth-header">
+                <div class="auth-logo security">
+                    <i class="fas fa-key"></i>
+                </div>
+                <h2>Update Security</h2>
+                <p>Change your authentication credentials securely.</p>
+            </div>
+
+            <form id="resetForm" novalidate>
+                <div class="form-group">
+                    <label for="resetUser">Username</label>
+                    <div class="input-icon-wrap">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" id="resetUser" placeholder="Username" autocomplete="username" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="oldPassword">Current Password</label>
+                    <div class="input-icon-wrap">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="oldPassword" placeholder="Current password" required>
+                        <button type="button" class="toggle-pass" data-target="oldPassword" aria-label="Toggle password visibility">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="newPassword">New Password</label>
+                    <div class="input-icon-wrap">
+                        <i class="fas fa-key input-icon"></i>
+                        <input type="password" id="newPassword" placeholder="New password" required>
+                        <button type="button" class="toggle-pass" data-target="newPassword" aria-label="Toggle password visibility">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <p id="resetMsg" class="error-text" role="alert"></p>
+
+                <button type="submit" id="submitReset" class="btn-primary btn-glow">
+                    <span>Update Password</span>
+                    <i class="fas fa-check"></i>
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                <a href="#" id="backToLogin" class="auth-link">
+                    <i class="fas fa-arrow-left"></i> Back to login
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- DASHBOARD SECTION -->
+    <div id="appSection" class="app-wrapper" style="display:none;">
+        <!-- Top Glass Navigation -->
+        <nav class="glass-nav">
+            <div class="nav-left">
+                <div class="nav-avatar" id="userInitial">?</div>
+                <div class="nav-text">
+                    <div class="nav-name-row">
+                        <span id="welcomeName">Hi User</span>
+                        <span class="live-dot" title="Cloud Connected"></span>
+                    </div>
+                    <small id="shiftDisplay">Shift 1: 09:15 AM – 07:00 PM (15m Grace)</small>
+                </div>
+            </div>
+
+            <div class="nav-right">
+                <button id="logoutBtn" class="btn-logout" title="Sign Out">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Sign Out</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Monthly Summary KPI Strip -->
+        <section class="kpi-strip">
+            <div class="kpi-card">
+                <div class="kpi-icon indigo"><i class="fas fa-calendar-check"></i></div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Days Logged</span>
+                    <strong class="kpi-value" id="kpiDays">0</strong>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon emerald"><i class="fas fa-bolt"></i></div>
+                <div class="kpi-info">
+                    <span class="kpi-label">On-Time / OT</span>
+                    <strong class="kpi-value" id="kpiOnTime">0</strong>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon amber"><i class="fas fa-clock"></i></div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Late / Early</span>
+                    <strong class="kpi-value" id="kpiLate">0</strong>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon slate"><i class="fas fa-umbrella-beach"></i></div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Leaves</span>
+                    <strong class="kpi-value" id="kpiLeaves">0</strong>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Grid -->
+        <div class="dashboard-grid">
+            <!-- Sidebar: Input Form & Monthly Balance -->
+            <aside class="side-panel">
+                <div class="glass-card form-card" id="entryFormCard">
+                    <div class="card-header-flex">
+                        <h3><i class="fas fa-plus-circle"></i> Daily Log</h3>
+                        <button type="button" id="cancelEditBtn" class="edit-badge" style="display:none;">
+                            Editing <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <!-- Shift Selector -->
+                    <div class="form-group">
+                        <label>Active Shift</label>
+                        <div class="shift-switcher" role="radiogroup" aria-label="Select Shift">
+                            <button type="button" class="shift-pill active" data-shift="09:15-19:00">
+                                <span class="shift-title">Shift 1 <em class="grace-tag">15m Grace</em></span>
+                                <span class="shift-time">09:15 AM – 07:00 PM</span>
+                            </button>
+                            <button type="button" class="shift-pill" data-shift="09:30-18:30">
+                                <span class="shift-title">Shift 2 <em class="hardcore-tag">No Grace</em></span>
+                                <span class="shift-time">09:30 AM – 06:30 PM</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="punchDate">Entry Date</label>
+                        <input type="date" id="punchDate">
+                    </div>
+
+                    <div class="leave-toggle">
+                        <div class="leave-label-wrap">
+                            <i class="fas fa-mug-hot"></i>
+                            <span>Mark as Leave</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="isLeave">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+
+                    <div id="timeInputGroup" class="time-group">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="morningPunch">Morning In</label>
+                                <input type="time" id="morningPunch" value="09:15">
+                            </div>
+                            <div class="form-group">
+                                <label for="eveningPunch">Evening Out</label>
+                                <input type="time" id="eveningPunch" value="19:00">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Calculation Preview -->
+                    <div class="live-preview" id="livePreview">
+                        <div class="preview-left">
+                            <span class="preview-label">Preview Status</span>
+                            <span id="previewBadge" class="badge on-time">On-Time</span>
+                        </div>
+                        <div class="preview-right">
+                            <span class="preview-label">Daily +/-</span>
+                            <strong id="previewDiff" class="neutral">0 min</strong>
+                        </div>
+                    </div>
+
+                    <button type="button" id="saveBtn" class="btn-primary btn-glow">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <span id="saveBtnText">Sync to Cloud</span>
+                    </button>
+                </div>
+
+                <!-- Monthly Accumulation Card -->
+                <div class="glass-card total-card">
+                    <div class="total-top">
+                        <span class="total-label">Monthly Accumulation</span>
+                        <span class="total-sub" id="totalGoalHint">Target balance: 0h 00m</span>
+                    </div>
+                    <h2 id="totalTime" class="total-amount">0h 00m</h2>
+                    <div class="progress-container">
+                        <div class="progress-bar" id="progressBar"></div>
+                    </div>
+                    <div class="progress-meta">
+                        <span id="progressStatus">Balanced schedule</span>
+                        <span id="progressPercent">0m</span>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main: Table / Mobile Cards -->
+            <main class="main-content">
+                <div class="glass-card table-card">
+                    <div class="table-header-row">
+                        <div>
+                            <h3><i class="fas fa-list-ul"></i> Attendance Logs</h3>
+                            <p class="table-subtitle" id="tableCountText">Showing records for selected month</p>
+                        </div>
+                        <div class="filter-group">
+                            <div class="select-wrap">
+                                <i class="fas fa-calendar-alt"></i>
+                                <select id="monthFilter" class="custom-select" aria-label="Filter by month"></select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Status Filter Pills -->
+                    <div class="status-filter-bar" id="statusFilterBar">
+                        <button type="button" class="filter-chip active" data-filter="all">All</button>
+                        <button type="button" class="filter-chip" data-filter="on-time">On-Time</button>
+                        <button type="button" class="filter-chip" data-filter="overtime">Overtime</button>
+                        <button type="button" class="filter-chip" data-filter="late">Late</button>
+                        <button type="button" class="filter-chip" data-filter="early-exit">Early-Exit</button>
+                        <button type="button" class="filter-chip" data-filter="leave">Leave</button>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table id="timeTable">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>In</th>
+                                    <th>Out</th>
+                                    <th>Status</th>
+                                    <th>Daily +/-</th>
+                                    <th>Diff</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <footer class="modern-footer">
+        <p>Built with <i class="fas fa-heart pulse-heart"></i> by <span>Raj Saxena</span> &copy; 2026</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
